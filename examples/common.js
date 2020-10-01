@@ -65,7 +65,7 @@ const Tetrahedron = defs.Tetrahedron =
         // will look "off".  To get crisp seams at the edges we need the repeats.
         constructor(using_flat_shading) {
             super("position", "normal", "texture_coord");
-            var a = 1 / Math.sqrt(3);
+            const a = 1 / Math.sqrt(3);
             if (!using_flat_shading) {
                 // Method 1:  A tetrahedron with shared vertices.  Compact, performs better,
                 // but can't produce flat shading or discontinuous seams in textures.
@@ -124,7 +124,7 @@ const Windmill = defs.Windmill =
                 // points; their perpendicularity constraint gives them a mathematical quirk that when applying
                 // matrices you have to apply the transposed inverse of that matrix instead.  But right now we've
                 // got a pure rotation matrix, where the inverse and transpose operations cancel out, so it's ok.
-                var newNormal = spin.times(vec4(0, 0, 1, 0)).to3();
+                const newNormal = spin.times(vec4(0, 0, 1, 0)).to3();
                 // Propagate the same normal to all three vertices:
                 this.arrays.normal.push(newNormal, newNormal, newNormal);
                 this.arrays.texture_coord.push(...Vec.cast([0, 0], [0, 1], [1, 0]));
@@ -143,9 +143,9 @@ const Cube = defs.Cube =
         constructor() {
             super("position", "normal", "texture_coord");
             // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
-            for (var i = 0; i < 3; i++)
-                for (var j = 0; j < 2; j++) {
-                    var square_transform = Mat4.rotation(i == 0 ? Math.PI / 2 : 0, 1, 0, 0)
+            for (let i = 0; i < 3; i++)
+                for (let j = 0; j < 2; j++) {
+                    const square_transform = Mat4.rotation(i == 0 ? Math.PI / 2 : 0, 1, 0, 0)
                         .times(Mat4.rotation(Math.PI * j - (i == 1 ? Math.PI / 2 : 0), 0, 1, 0))
                         .times(Mat4.translation(0, 0, 1));
                     // Calling this function of a Square (or any Shape) copies it into the specified
@@ -219,11 +219,11 @@ const Subdivision_Sphere = defs.Subdivision_Sphere =
             }
             // So we're not at the base case.  So, build 3 new vertices at midpoints,
             // and extrude them out to touch the unit sphere (length 1).
-            var ab_vert = this.arrays.position[a].mix(this.arrays.position[b], 0.5).normalized(),
+            let ab_vert = this.arrays.position[a].mix(this.arrays.position[b], 0.5).normalized(),
                 ac_vert = this.arrays.position[a].mix(this.arrays.position[c], 0.5).normalized(),
                 bc_vert = this.arrays.position[b].mix(this.arrays.position[c], 0.5).normalized();
             // Here, push() returns the indices of the three new vertices (plus one).
-            var ab = this.arrays.position.push(ab_vert) - 1,
+            let ab = this.arrays.position.push(ab_vert) - 1,
                 ac = this.arrays.position.push(ac_vert) - 1,
                 bc = this.arrays.position.push(bc_vert) - 1;
             // Recurse on four smaller triangles, and we're done.  Skipping every fourth vertex index in
@@ -287,10 +287,10 @@ const Grid_Patch = defs.Grid_Patch =
             }
 
 
-            for (var h = 0; h < rows; h++) {
+            for (let h = 0; h < rows; h++) {
                 // Generate a sequence like this (if #columns is 10):
-                for (var i = 0; i < 2 * columns; i++)    // "1 11 0  11 1 12  2 12 1  12 2 13  3 13 2  13 3 14  4 14 3..."
-                    for (var j = 0; j < 3; j++)
+                for (let i = 0; i < 2 * columns; i++)    // "1 11 0  11 1 12  2 12 1  12 2 13  3 13 2  13 3 14  4 14 3..."
+                    for (let j = 0; j < 3; j++)
                         this.indices.push(h * (columns + 1) + columns * ((i + (j % 2)) % 2) + (~~((j % 3) / 2) ?
                             (~~(i / 2) + 2 * (i % 2)) : (~~(i / 2) + 1)));
             }
@@ -419,7 +419,7 @@ const Axis_Arrows = defs.Axis_Arrows =
         // An axis set with arrows, made out of a lot of various primitives.
         constructor() {
             super("position", "normal", "texture_coord");
-            var stack = [];
+            let stack = [];
             Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.rotation(Math.PI / 2, 0, 1, 0).times(Mat4.scale(.25, .25, .25)));
             this.drawOneAxis(Mat4.identity(), [[.67, 1], [0, 1]]);
             this.drawOneAxis(Mat4.rotation(-Math.PI / 2, 1, 0, 0).times(Mat4.scale(1, -1, 1)), [[.34, .66], [0, 1]]);
@@ -693,7 +693,7 @@ const Phong_Shader = defs.Phong_Shader =
                 return;
 
             const light_positions_flattened = [], light_colors_flattened = [];
-            for (var i = 0; i < 4 * gpu_state.lights.length; i++) {
+            for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
                 light_positions_flattened.push(gpu_state.lights[Math.floor(i / 4)].position[i % 4]);
                 light_colors_flattened.push(gpu_state.lights[Math.floor(i / 4)].color[i % 4]);
             }

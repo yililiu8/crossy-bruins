@@ -1,8 +1,12 @@
-// This file defines a lot of panels that can be placed on websites to create interactive graphics programs that use tiny-graphics.js.
+/**
+ * @file
+ * This file defines a lot of panels that can be placed on websites to create interactive graphics programs that use tiny-graphics.js.
+ */
 
 import {tiny} from './tiny-graphics.js';
 
-const {color, Scene} = tiny;           // Pull these names into this module's scope for convenience.
+// Pull these names into this module's scope for convenience.
+const {color, Scene} = tiny;
 
 export const widgets = {};
 
@@ -183,11 +187,11 @@ const Code_Manager = widgets.Code_Manager =
         // as one."  (This can miscolor lines of code containing divisions and comments).
         constructor(code) {
             const es6_tokens_parser = RegExp([
-                /((['"])(?:(?!\2|\\).|\\(?:\r\n|[\s\S]))*(\2)?|`(?:[^`\\$]|\\[\s\S]|\$(?!\{)|\$\{(?:[^{}]|\{[^}]*\}?)*\}?)*(`)?)/,    // Any string.
+                /((['"])(?:(?!\2|\\).|\\(?:\r\n|[\s\S]))*(\2)?|`(?:[^`\\$]|\\[\s\S]|\$(?!{)|\${(?:[^{}]|{[^}]*}?)*}?)*(`)?)/,    // Any string.
                 /(\/\/.*)|(\/\*(?:[^*]|\*(?!\/))*(\*\/)?)/,                                                                           // Any comment (2 forms).  And next, any regex:
-                /(\/(?!\*)(?:\[(?:(?![\]\\]).|\\.)*\]|(?![\/\]\\]).|\\.)+\/(?:(?!\s*(?:\b|[\u0080-\uFFFF$\\'"~({]|[+\-!](?!=)|\.?\d))|[gmiyu]{1,5}\b(?![\u0080-\uFFFF$\\]|\s*(?:[+\-*%&|^<>!=?({]|\/(?![\/*])))))/,
+                /(\/(?!\*)(?:\[(?:(?![\]\\]).|\\.)*]|(?![\/\]\\]).|\\.)+\/(?:(?!\s*(?:\b|[\u0080-\uFFFF$\\'"~({]|[+\-!](?!=)|\.?\d))|[gmiyu]{1,5}\b(?![\u0080-\uFFFF$\\]|\s*(?:[+\-*%&|^<>!=?({]|\/(?![\/*])))))/,
                 /(0[xX][\da-fA-F]+|0[oO][0-7]+|0[bB][01]+|(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?)/,                                     // Any number.
-                /((?!\d)(?:(?!\s)[$\w\u0080-\uFFFF]|\\u[\da-fA-F]{4}|\\u\{[\da-fA-F]+\})+)/,                                          // Any name.
+                /((?!\d)(?:(?!\s)[$\w\u0080-\uFFFF]|\\u[\da-fA-F]{4}|\\u{[\da-fA-F]+})+)/,                                          // Any name.
                 /(--|\+\+|&&|\|\||=>|\.{3}|(?:[+\-\/%&|^]|\*{1,2}|<{1,2}|>{1,3}|!=?|={1,2})=?|[?~.,:;[\](){}])/,                      // Any punctuator.
                 /(\s+)|(^$|[\s\S])/                                                                                                   // Any whitespace. Lastly, blank/invalid.
             ].map(r => r.source).join('|'), 'g');
@@ -197,10 +201,14 @@ const Code_Manager = widgets.Code_Manager =
             let single_token = null;
             while ((single_token = es6_tokens_parser.exec(code)) !== null) {
                 let token = {type: "invalid", value: single_token[0]}
-                if (single_token[1]) token.type = "string" , token.closed = !!(single_token[3] || single_token[4])
-                else if (single_token[5]) token.type = "comment"
-                else if (single_token[6]) token.type = "comment", token.closed = !!single_token[7]
-                else if (single_token[8]) token.type = "regex"
+                if (single_token[1]) {
+                    token.type = "string";
+                    token.closed = !!(single_token[3] || single_token[4]);
+                } else if (single_token[5]) token.type = "comment"
+                else if (single_token[6]) {
+                    token.type = "comment";
+                    token.closed = !!single_token[7];
+                } else if (single_token[8]) token.type = "regex"
                 else if (single_token[9]) token.type = "number"
                 else if (single_token[10]) token.type = "name"
                 else if (single_token[11]) token.type = "punctuator"
@@ -216,15 +224,20 @@ const Code_Widget = widgets.Code_Widget =
     class Code_Widget {
         // **Code_Widget** draws a code navigator panel with inline links to the entire program source code.
         constructor(element, main_scene, additional_scenes, options = {}) {
-            const rules = [".code-widget .code-panel { margin:auto; background:white; overflow:auto; font-family:monospace; width:1060px; padding:10px; padding-bottom:40px; max-height: 500px; \
-                                                      border-radius:12px; box-shadow: 20px 20px 90px 0px powderblue inset, 5px 5px 30px 0px blue inset }",
+            const rules = [".code-widget .code-panel { margin:auto; background:white; overflow:auto; font-family:monospace; \
+                width:1060px; padding:10px; padding-bottom:40px; max-height: 500px; \
+                border-radius:12px; box-shadow: 20px 20px 90px 0px powderblue inset, 5px 5px 30px 0px blue inset }",
                 ".code-widget .code-display { min-width:1200px; padding:10px; white-space:pre-wrap; background:transparent }",
-                ".code-widget table { display:block; margin:auto; overflow-x:auto; width:1080px; border-radius:25px; border-collapse:collapse; border: 2px solid black }",
-                ".code-widget table.class-list td { border-width:thin; background: #EEEEEE; padding:12px; font-family:monospace; border: 1px solid black }"
+                ".code-widget table { display:block; margin:auto; overflow-x:auto; width:1080px; border-radius:25px; " +
+                "border-collapse:collapse; border: 2px solid black }",
+                ".code-widget table.class-list td { border-width:thin; background: #EEEEEE; padding:12px; " +
+                "font-family:monospace; border: 1px solid black }"
             ];
 
-            if (document.styleSheets.length == 0) document.head.appendChild(document.createElement("style"));
-            for (const r of rules) document.styleSheets[document.styleSheets.length - 1].insertRule(r, 0)
+            if (document.styleSheets.length == 0)
+                document.head.appendChild(document.createElement("style"));
+            for (const r of rules)
+                document.styleSheets[document.styleSheets.length - 1].insertRule(r, 0)
 
             this.associated_editor_widget = options.associated_editor;
 
@@ -233,7 +246,6 @@ const Code_Widget = widgets.Code_Widget =
 
             import( './main-scene.js' )
                 .then(module => {
-
                     this.build_reader(element, main_scene, additional_scenes, module.defs);
                     if (!options.hide_navigator)
                         this.build_navigator(element, main_scene, additional_scenes, module.defs);
@@ -245,8 +257,8 @@ const Code_Widget = widgets.Code_Widget =
             this.definitions = definitions;
             const code_panel = element.appendChild(document.createElement("div"));
             code_panel.className = "code-panel";
-//       const text        = code_panel.appendChild( document.createElement( "p" ) );
-//       text.textContent  = "Code for the above scene:";
+            // const text        = code_panel.appendChild( document.createElement( "p" ) );
+            // text.textContent  = "Code for the above scene:";
             this.code_display = code_panel.appendChild(document.createElement("div"));
             this.code_display.className = "code-display";
             // Default textbox contents:
@@ -358,8 +370,9 @@ const Editor_Widget = widgets.Editor_Widget =
             }, false);
 
             const explanation = form.appendChild(document.createElement("p"));
-            explanation.innerHTML = `<i><b>What can I put here?</b></i>  A JavaScript class, with any valid JavaScript inside.  Your code can use classes from this demo,
-                               <br>or from ANY demo on Demopedia --  the dependencies will automatically be pulled in to run your demo!<br>`;
+            explanation.innerHTML = `<i><b>What can I put here?</b></i>  
+                A JavaScript class, with any valid JavaScript inside.  Your code can use classes from this demo,
+                <br>or from ANY demo on Demopedia --  the dependencies will automatically be pulled in to run your demo!<br>`;
 
             const run_button = this.run_button = form.appendChild(document.createElement("button"));
             run_button.type = "button";
@@ -439,7 +452,8 @@ const Text_Widget = widgets.Text_Widget =
         // documentation is extracted from whichever Scene object gets loaded first.
         constructor(element, scenes, webgl_manager) {
             const rules = [".text-widget { background: white; width:1060px;\
-                        padding:0 10px; overflow:auto; transition:1s; overflow-y:scroll; box-shadow: 10px 10px 90px 0 inset LightGray}",
+                             padding:0 10px; overflow:auto; transition:1s; \
+                             overflow-y:scroll; box-shadow: 10px 10px 90px 0 inset LightGray}",
                 ".text-widget div { transition:none } "
             ];
             if (document.styleSheets.length == 0) document.head.appendChild(document.createElement("style"));

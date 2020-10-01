@@ -1,69 +1,74 @@
-// tiny-graphics.js - A file that shows how to organize a complete graphics program.  It wraps common WebGL commands and math.
-// The file tiny-graphics-widgets.js additionally wraps web page interactions.  By Garett.
+/**
+ * @file A file that shows how to organize a complete graphics program.
+ * It wraps common WebGL commands and math.
+ * The file tiny-graphics-widgets.js additionally wraps web page interactions.  By Garett.
+ *
+ * This file will consist of a number of class definitions that we will
+ * export.  To organize the exports, we will both declare each class in
+ * local scope (const) as well as store them in this JS object:
+ *
+ * Organization of this file:  Math definitions, then graphics definitions.
+ *
+ * Vector and Matrix algebra are not built into JavaScript at first.  We will add it now.
+ *
+ * You will be able to declare a 3D vector [x,y,z] supporting various common vector operations
+ * with syntax:  vec(x,y), vec3( x,y,z ) or vec4( x,y,z, zero or one ).  For general sized vectors, use
+ * class Vector and declare them with standard Array-supported operations like .of().
+ *
+ * For matrices, you will use class Mat4 to generate the 4 by 4 matrices that are common
+ * in graphics, or for general sized matrices you can use class Matrix.
+ *
+ * To get vector algebra that performs well in JavaScript, we based class Vector on consecutive
+ * buffers (using type Float32Array).  Implementations should specialize for common vector
+ * sizes 3 and 4 since JavaScript engines can better optimize functions when they can predict
+ * argument count.  Implementations should also avoid allocating new array objects since these
+ * will all have to be garbage collected.
+ *
+ * Examples:
+ *  ** For size 3 **
+ *     equals: "vec3( 1,0,0 ).equals( vec3( 1,0,0 ) )" returns true.
+ *       plus: "vec3( 1,0,0 ).plus  ( vec3( 1,0,0 ) )" returns the Vector [ 2,0,0 ].
+ *      minus: "vec3( 1,0,0 ).minus ( vec3( 1,0,0 ) )" returns the Vector [ 0,0,0 ].
+ * mult-pairs: "vec3( 1,2,3 ).mult_pairs( vec3( 3,2,0 ) )" returns the Vector [ 3,4,0 ].
+ *      scale: "vec3( 1,2,3 ).scale( 2 )" overwrites the Vector with [ 2,4,6 ].
+ *      times: "vec3( 1,2,3 ).times( 2 )" returns the Vector [ 2,4,6 ].
+ * randomized: Returns this Vector plus a random vector of a given maximum length.
+ *        mix: "vec3( 0,2,4 ).mix( vec3( 10,10,10 ), .5 )" returns the Vector [ 5,6,7 ].
+ *       norm: "vec3( 1,2,3 ).norm()" returns the square root of 15.
+ * normalized: "vec3( 4,4,4 ).normalized()" returns the Vector [ sqrt(3), sqrt(3), sqrt(3) ]
+ *  normalize: "vec3( 4,4,4 ).normalize()" overwrites the Vector with [ sqrt(3), sqrt(3), sqrt(3) ].
+ *        dot: "vec3( 1,2,3 ).dot( vec3( 1,2,3 ) )" returns 15.
+ *       cast: "vec3.cast( [-1,-1,0], [1,-1,0], [-1,1,0] )" converts a list of Array literals into a list of vec3's.
+ *        to4: "vec3( 1,2,3 ).to4( true or false )" returns the homogeneous vec4 [ 1,2,3, 1 or 0 ].
+ *      cross: "vec3( 1,0,0 ).cross( vec3( 0,1,0 ) )" returns the Vector [ 0,0,1 ].  Use only on 3x1 Vecs.
+ *  to_string: "vec3( 1,2,3 ).to_string()" returns "[vec3 1, 2, 3]"
+ *  ** For size 4, same except: **
+ *        to3: "vec4( 4,3,2,1 ).to3()" returns the vec3 [ 4,3,2 ].  Use to truncate vec4 to vec3.
+ *  ** To assign by value **
+ *       copy: "let new_vector = old_vector.copy()" assigns by value so you get a different vector object.
+ *  ** For any size **
+ * to declare: Vector.of( 1,2,3,4,5,6,7,8,9,10 ) returns a Vector filled with those ten entries.
+ *  ** For multiplication by matrices **
+ *             "any_mat4.times( vec4( 1,2,3,0 ) )" premultiplies the homogeneous Vector [1,2,3]
+ *              by the 4x4 matrix and returns the new vec4.  Requires a vec4 as input.
+ */
 
-// This file will consist of a number of class definitions that we will
-// export.  To organize the exports, we will both declare each class in
-// local scope (const) as well as store them in this JS object:
 export const tiny = {};
 
-// Organization of this file:  Math definitions, then graphics definitions.
-
-// Vector and Matrix algebra are not built into JavaScript at first.  We will add it now.
-
-// You will be able to declare a 3D vector [x,y,z] supporting various common vector operations
-// with syntax:  vec(x,y), vec3( x,y,z ) or vec4( x,y,z, zero or one ).  For general sized vectors, use
-// class Vector and declare them with standard Array-supported operations like .of().
-
-// For matrices, you will use class Mat4 to generate the 4 by 4 matrices that are common
-// in graphics, or for general sized matrices you can use class Matrix.
-
-// To get vector algebra that performs well in JavaScript, we based class Vector on consecutive
-// buffers (using type Float32Array).  Implementations should specialize for common vector
-// sizes 3 and 4 since JavaScript engines can better optimize functions when they can predict
-// argument count.  Implementations should also avoid allocating new array objects since these
-// will all have to be garbage collected.
-
-// Examples:
-
-//  ** For size 3 **
-//     equals: "vec3( 1,0,0 ).equals( vec3( 1,0,0 ) )" returns true.
-//       plus: "vec3( 1,0,0 ).plus  ( vec3( 1,0,0 ) )" returns the Vector [ 2,0,0 ].
-//      minus: "vec3( 1,0,0 ).minus ( vec3( 1,0,0 ) )" returns the Vector [ 0,0,0 ].
-// mult-pairs: "vec3( 1,2,3 ).mult_pairs( vec3( 3,2,0 ) )" returns the Vector [ 3,4,0 ].
-//      scale: "vec3( 1,2,3 ).scale( 2 )" overwrites the Vector with [ 2,4,6 ].
-//      times: "vec3( 1,2,3 ).times( 2 )" returns the Vector [ 2,4,6 ].
-// randomized: Returns this Vector plus a random vector of a given maximum length.
-//        mix: "vec3( 0,2,4 ).mix( vec3( 10,10,10 ), .5 )" returns the Vector [ 5,6,7 ].
-//       norm: "vec3( 1,2,3 ).norm()" returns the square root of 15.
-// normalized: "vec3( 4,4,4 ).normalized()" returns the Vector [ sqrt(3), sqrt(3), sqrt(3) ]
-//  normalize: "vec3( 4,4,4 ).normalize()" overwrites the Vector with [ sqrt(3), sqrt(3), sqrt(3) ].
-//        dot: "vec3( 1,2,3 ).dot( vec3( 1,2,3 ) )" returns 15.
-//       cast: "vec3.cast( [-1,-1,0], [1,-1,0], [-1,1,0] )" converts a list of Array literals into a list of vec3's.
-//        to4: "vec3( 1,2,3 ).to4( true or false )" returns the homogeneous vec4 [ 1,2,3, 1 or 0 ].
-//      cross: "vec3( 1,0,0 ).cross( vec3( 0,1,0 ) )" returns the Vector [ 0,0,1 ].  Use only on 3x1 Vecs.
-//  to_string: "vec3( 1,2,3 ).to_string()" returns "[vec3 1, 2, 3]"
-//  ** For size 4, same except: **
-//        to3: "vec4( 4,3,2,1 ).to3()" returns the vec3 [ 4,3,2 ].  Use to truncate vec4 to vec3.
-//  ** To assign by value **
-//       copy: "let new_vector = old_vector.copy()" assigns by value so you get a different vector object.
-//  ** For any size **
-// to declare: Vector.of( 1,2,3,4,5,6,7,8,9,10 ) returns a Vector filled with those ten entries.
-//  ** For multiplication by matrices **
-//             "any_mat4.times( vec4( 1,2,3,0 ) )" premultiplies the homogeneous Vector [1,2,3]
-//              by the 4x4 matrix and returns the new vec4.  Requires a vec4 as input.
-
+/**
+ * **Vector** stores vectors of floating point numbers.  Puts vector math into JavaScript.
+ * @Note  Vectors should be created with of() due to wierdness with the TypedArray spec.
+ * @Tip Assign Vectors with .copy() to avoid referring two variables to the same Vector object.
+ * @type {tiny.Vector}
+ */
 const Vector = tiny.Vector =
     class Vector extends Float32Array {
-        // **Vector** stores vectors of floating point numbers.  Puts vector math into JavaScript.
-        // Note:  Vectors should be created with of() due to wierdness with the TypedArray spec.
-        // Tip: Assign Vectors with .copy() to avoid referring two variables to the same Vector object.
         static create(...arr) {
             return new Vector(arr);
         }
 
-        static cast(...args)
         // cast(): For compact syntax when declaring lists.
-        {
+        static cast(...args) {
             return args.map(x => Vector.from(x))
         }
 
@@ -124,9 +129,8 @@ const Vector = tiny.Vector =
             }, 0);
         }
 
-        // to3() / to4() / cross():  For standardizing the API with Vector3/Vector4, so
-
-        // the performance hit of changing between these types can be measured.
+        // to3() / to4() / cross():  For standardizing the API with Vector3/Vector4,
+        // so the performance hit of changing between these types can be measured.
         to3() {
             return vec3(this[0], this[1], this[2]);
         }
@@ -136,7 +140,9 @@ const Vector = tiny.Vector =
         }
 
         cross(b) {
-            return vec3(this[1] * b[2] - this[2] * b[1], this[2] * b[0] - this[0] * b[2], this[0] * b[1] - this[1] * b[0]);
+            return vec3(this[1] * b[2] - this[2] * b[1],
+                this[2] * b[0] - this[0] * b[2],
+                this[0] * b[1] - this[1] * b[0]);
         }
 
         to_string() {
@@ -368,8 +374,8 @@ const Vector4 = tiny.Vector4 =
                 (1 - s) * this[3] + s * b[3]);
         }
 
-        // The norms should behave like for Vector3 because of the homogenous format.
         norm() {
+            // The norms should behave like for Vector3 because of the homogenous format.
             return Math.sqrt(this[0] * this[0] + this[1] * this[1] + this[2] * this[2])
         }
 

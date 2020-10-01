@@ -25,13 +25,13 @@ const Minimal_Webgl_Demo = defs.Minimal_Webgl_Demo;
 
 Object.assign(defs,
     {Axes_Viewer, Axes_Viewer_Test_Scene},
-    {Inertia_Demo, Collision_Demo},
-    {Many_Lights_Demo},
-    {Obj_File_Demo},
-    {Scene_To_Texture_Demo},
-    {Surfaces_Demo},
-    {Text_Demo},
-    {Transforms_Sandbox});
+            {Inertia_Demo, Collision_Demo},
+            {Many_Lights_Demo},
+            {Obj_File_Demo},
+            {Scene_To_Texture_Demo},
+            {Surfaces_Demo},
+            {Text_Demo},
+            {Transforms_Sandbox});
 
 // ******************** End extra step
 
