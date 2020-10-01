@@ -427,14 +427,14 @@ const Color = tiny.Color =
         }
 
         // Create color from Hex numbers
-        static create_from_hex(hex) {
+        static create_from_hex(hex, alpha = 1.) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             const v = new Vector4(4);
             if (result) {
-                v[0] = parseInt(result[1], 16) / 256.;
-                v[1] = parseInt(result[2], 16) / 256.;
-                v[2] = parseInt(result[3], 16) / 256.;
-                v[3] = 1.;
+                v[0] = parseInt(result[1], 16) / 255.;
+                v[1] = parseInt(result[2], 16) / 255.;
+                v[2] = parseInt(result[3], 16) / 255.;
+                v[3] = alpha;
             }
             return v;
         }
@@ -746,12 +746,15 @@ const Graphics_Card_Object = tiny.Graphics_Card_Object =
             if (!existing_instance) {
                 Graphics_Card_Object.idiot_alarm |= 0;     // Start a program-wide counter.
                 if (Graphics_Card_Object.idiot_alarm++ > 200)
-                    throw `Error: You are sending a lot of object definitions to the GPU, probably by mistake!  Many of them are likely duplicates, which you
-                   don't want since sending each one is very slow.  To avoid this, from your display() function avoid ever declaring a Shape Shader
-                   or Texture (or subclass of these) with "new", thus causing the definition to be re-created and re-transmitted every frame.  
-                   Instead, call these in your scene's constructor and keep the result as a class member, or otherwise make sure it only happens 
-                   once.  In the off chance that you have a somehow deformable shape that MUST change every frame, then at least use the special
-                   arguments of copy_onto_graphics_card to limit which buffers get overwritten every frame to only the necessary ones.`;
+                    throw `Error: You are sending a lot of object definitions to the GPU, probably by mistake!  
+                    Many of them are likely duplicates, which you don't want since sending each one is very slow.  
+                    To avoid this, from your display() function avoid ever declaring a Shape Shader or Texture (or 
+                    subclass of these) with "new", thus causing the definition to be re-created and re-transmitted every
+                    frame. Instead, call these in your scene's constructor and keep the result as a class member, 
+                    or otherwise make sure it only happens once.  In the off chance that you have a somehow deformable 
+                    shape that MUST change every frame, then at least use the special arguments of 
+                    copy_onto_graphics_card to limit which buffers get overwritten every frame to only 
+                    the necessary ones.`;
             }
             // Check if this object already exists on that GPU context.
             return existing_instance ||             // If necessary, start a new object associated with the context.
@@ -940,13 +943,15 @@ const Shape = tiny.Shape =
 
         normalize_positions(keep_aspect_ratios = true) {
             let p_arr = this.arrays.position;
-            const average_position = p_arr.reduce((acc, p) => acc.plus(p.times(1 / p_arr.length)), vec3(0, 0, 0));
+            const average_position = p_arr.reduce((acc, p) => acc.plus(p.times(1 / p_arr.length)),
+                vec3(0, 0, 0));
             p_arr = p_arr.map(p => p.minus(average_position));           // Center the point cloud on the origin.
             const average_lengths = p_arr.reduce((acc, p) =>
                 acc.plus(p.map(x => Math.abs(x)).times(1 / p_arr.length)), vec3(0, 0, 0));
-            if (keep_aspect_ratios)                            // Divide each axis by its average distance from the origin.
+            if (keep_aspect_ratios) {
+                // Divide each axis by its average distance from the origin.
                 this.arrays.position = p_arr.map(p => p.map((x, i) => x / average_lengths[i]));
-            else
+            } else
                 this.arrays.position = p_arr.map(p => p.times(1 / average_lengths.norm()));
         }
     }
@@ -1388,7 +1393,7 @@ const Scene = tiny.Scene =
             }));
         }
 
-        key_triggered_button(description, shortcut_combination, callback, color = '#' + Math.random().toString(9).slice(-6),
+        key_triggered_button(description, shortcut_combination, callback, color = '#6E6460',
                              release_event, recipient = this, parent = this.control_panel) {
             // key_triggered_button():  Trigger any scene behavior by assigning
             // a key shortcut and a labelled HTML button to fire any callback
@@ -1397,8 +1402,8 @@ const Scene = tiny.Scene =
             button.default_color = button.style.backgroundColor = color;
             const press = () => {
                     Object.assign(button.style, {
-                        'background-color': 'red',
-                        'z-index': "1", 'transform': "scale(2)"
+                        'background-color': color,
+                        'z-index': "1", 'transform': "scale(1.5)"
                     });
                     callback.call(recipient);
                 },

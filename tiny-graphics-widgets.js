@@ -28,7 +28,7 @@ const Canvas_Widget = widgets.Canvas_Widget =
                 Object.assign(options, initial_scenes[0].widget_options);
             Object.assign(this, defaults, options)
 
-            const rules = [".canvas-widget { width: 1080px; background: DimGray; margin:auto }",
+            const rules = [".canvas-widget { width: 1080px; background: White; margin:auto }",
                 ".canvas-widget canvas { width: 1080px; height: 600px; margin-bottom:-3px }"];
 
             if (document.styleSheets.length == 0) document.head.appendChild(document.createElement("style"));
@@ -94,25 +94,26 @@ const Controls_Widget = widgets.Controls_Widget =
         // bindings, live readouts of Scene data members, etc.
         constructor(element, scenes) {
             const rules = [".controls-widget * { font-family: monospace }",
-                ".controls-widget div { background: white }",
-                ".controls-widget table { border-collapse: collapse; display:block; overflow-x: auto; }",
-                ".controls-widget table.control-box { width: 1080px; border:0; margin:0; max-height:380px; transition:.5s; overflow-y:scroll; background:DimGray }",
+                ".controls-widget div { background: White }",
+                ".controls-widget table { border-collapse: collapse; display:block; overflow-x: auto; table-layout: fixed;}",
+                ".controls-widget table.control-box { width: 1080px; border:1px; margin:0; max-height:380px; " +
+                "transition:.5s; overflow-y:scroll; background:white }",
                 ".controls-widget table.control-box:hover { max-height:500px }",
-                ".controls-widget table.control-box td { overflow:hidden; border:0; background:DimGray; border-radius:30px }",
-                ".controls-widget table.control-box td .control-div { background: #EEEEEE; height:338px; padding: 5px 5px 5px 30px; box-shadow: 25px 0px 60px -15px inset }",
+                ".controls-widget table.control-box td { overflow:hidden; border:1px; background:Black; border-radius:10px; width: 540px;}",
+                ".controls-widget table.control-box td .control-div { background: White; height:338px; padding: 5px 5px 5px 30px; }",
                 ".controls-widget table.control-box td * { background:transparent }",
                 ".controls-widget table.control-box .control-div td { border-radius:unset }",
-                ".controls-widget table.control-box .control-title { padding:7px 40px; color:white; background:DarkSlateGray; box-shadow: 25px 0px 70px -15px inset black }",
+                ".controls-widget table.control-box .control-title { padding:7px 40px; color:white; background:#252424;}",
                 ".controls-widget *.live_string { display:inline-block; background:unset }",
                 ".dropdown { display:inline-block }",
                 ".dropdown-content { display:inline-block; transition:.2s; transform: scaleY(0); overflow:hidden; position: absolute; \
                                       z-index: 1; background:#E8F6FF; padding: 16px; margin-left:30px; min-width: 100px; \
-                                      box-shadow: 5px 10px 16px 0px rgba(0,0,0,0.2) inset; border-radius:10px }",
+                                      border-radius:10px }",
                 ".dropdown-content a { color: black; padding: 4px 4px; display: block }",
                 ".dropdown a:hover { background: #f1f1f1 }",
-                ".controls-widget button { background: #4C9F50; color: white; padding: 6px; border-radius:9px; \
-                                          box-shadow: 4px 6px 16px 0px rgba(0,0,0,0.3); transition: background .3s, transform .3s }",
-                ".controls-widget button:hover, button:focus { transform: scale(1.3); color:gold }",
+                ".controls-widget button { background: #303030; color: white; padding: 3px; border-radius:5px; \
+                                           transition: background .3s, transform .3s }",
+                ".controls-widget button:hover, button:focus { transform: scale(1.1); color:#FFFFFF }",
                 ".link { text-decoration:underline; cursor: pointer }",
                 ".show { transform: scaleY(1); height:200px; overflow:auto }",
                 ".hide { transform: scaleY(0); height:0px; overflow:hidden  }"];
@@ -224,13 +225,14 @@ const Code_Widget = widgets.Code_Widget =
     class Code_Widget {
         // **Code_Widget** draws a code navigator panel with inline links to the entire program source code.
         constructor(element, main_scene, additional_scenes, options = {}) {
+            // TODO: Update color and board here
             const rules = [".code-widget .code-panel { margin:auto; background:white; overflow:auto; font-family:monospace; \
-                width:1060px; padding:10px; padding-bottom:40px; max-height: 500px; \
-                border-radius:12px; box-shadow: 20px 20px 90px 0px powderblue inset, 5px 5px 30px 0px blue inset }",
+                width:1058px; padding:10px; padding-bottom:40px; max-height: 500px; \
+                border-radius:10px; border: 1px solid black; }",
                 ".code-widget .code-display { min-width:1200px; padding:10px; white-space:pre-wrap; background:transparent }",
-                ".code-widget table { display:block; margin:auto; overflow-x:auto; width:1080px; border-radius:25px; " +
-                "border-collapse:collapse; border: 2px solid black }",
-                ".code-widget table.class-list td { border-width:thin; background: #EEEEEE; padding:12px; " +
+                ".code-widget table { display:block; margin:auto; overflow-x:auto; width:1080px; border-radius:10px; " +
+                "border-collapse:collapse; border: 1px solid black }",
+                ".code-widget table.class-list td { border-width:thin; background: White; padding:10px; " +
                 "font-family:monospace; border: 1px solid black }"
             ];
 
@@ -349,12 +351,12 @@ const Editor_Widget = widgets.Editor_Widget =
     class Editor_Widget {
         constructor(element, initially_selected_class, canvas_widget, options = {}) {
             let rules = [".editor-widget { margin:auto; background:white; overflow:auto; font-family:monospace; width:1060px; padding:10px; \
-                                      border-radius:12px; box-shadow: 20px 20px 90px 0px powderblue inset, 5px 5px 30px 0px blue inset }",
-                ".editor-widget button { background: #4C9F50; color: white; padding: 6px; border-radius:9px; margin-right:5px; \
+                                      border-radius:10px; box-shadow: 20px 20px 90px 0px powderblue inset, 5px 5px 30px 0px blue inset }",
+                ".editor-widget button { background: #4C9F50; color: white; padding: 6px; border-radius:10px; margin-right:5px; \
                                          box-shadow: 4px 6px 16px 0px rgba(0,0,0,0.3); transition: background .3s, transform .3s }",
                 ".editor-widget input { margin-right:5px }",
                 ".editor-widget textarea { white-space:pre; width:1040px; margin-bottom:30px }",
-                ".editor-widget button:hover, button:focus { transform: scale(1.3); color:gold }"
+                ".editor-widget button:hover, button:focus { transform: scale(1.3); color:#252424 }"
             ];
 
             for (const r of rules) document.styleSheets[0].insertRule(r, 1);

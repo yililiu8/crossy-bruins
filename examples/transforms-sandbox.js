@@ -1,7 +1,7 @@
 import {defs, tiny} from './common.js';
 
 // Pull these names into this module's scope for convenience:
-const {vec3, vec4, color, Mat4, Light, Shape, Material, Shader, Texture, Scene} = tiny;
+const {vec3, vec4, color, hex_color, Mat4, Light, Shape, Material, Shader, Texture, Scene} = tiny;
 const {Triangle, Square, Tetrahedron, Windmill, Cube, Subdivision_Sphere} = defs;
 
 export class Transforms_Sandbox_Base extends Scene {
@@ -32,19 +32,21 @@ export class Transforms_Sandbox_Base extends Scene {
         const phong = new defs.Phong_Shader();
         this.materials = {
             plastic: new Material(phong,
-                {ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1)}),
+                {ambient: .2, diffusivity: .8, specularity: .5, color: color(.9, .5, .9, 1)}),
             metal: new Material(phong,
-                {ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1)})
+                {ambient: .2, diffusivity: .8, specularity: .8, color: color(.9, .5, .9, 1)})
         };
     }
 
-    make_control_panel() {                                 // make_control_panel(): Sets up a panel of interactive HTML elements, including
+    make_control_panel() {
+        // make_control_panel(): Sets up a panel of interactive HTML elements, including
         // buttons with key bindings for affecting this scene, and live info readouts.
-        this.control_panel.innerHTML += "Dragonfly rotation angle: <br>";
+        this.control_panel.innerHTML += "Dragonfly rotation angle: ";
         // The next line adds a live text readout of a data member of our Scene.
         this.live_string(box => {
             box.textContent = (this.hover ? 0 : (this.t % (2 * Math.PI)).toFixed(2)) + " radians"
         });
+        this.new_line();
         this.new_line();
         // Add buttons so the user can actively toggle data members of our Scene:
         this.key_triggered_button("Hover dragonfly in place", ["h"], function () {
@@ -74,14 +76,15 @@ export class Transforms_Sandbox_Base extends Scene {
             // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
             program_state.set_camera(Mat4.translation(0, 3, -10));
         }
-        program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 100);
+        program_state.projection_transform = Mat4.perspective(
+            Math.PI / 4, context.width / context.height, 1, 100);
 
         // *** Lights: *** Values of vector or point lights.  They'll be consulted by
         // the shader when coloring shapes.  See Light's class definition for inputs.
         const t = this.t = program_state.animation_time / 1000;
         const angle = Math.sin(t);
         const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, -1, 1, 0));
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
     }
 }
 
@@ -120,8 +123,8 @@ export class Transforms_Sandbox extends Transforms_Sandbox_Base {
             // translation(), scale(), and rotation() to generate matrices, and the
             // function times(), which generates products of matrices.
 
-        const blue = color(0, 0, 1, 1), yellow = color(1, 1, 0, 1);
-
+        // const blue = color(0, 0, 1, 1), yellow = color(1, 1, 0, 1);
+        const blue = hex_color("#1a9ffa"), yellow = hex_color("#fdc03a")
         // Variable model_transform will be a local matrix value that helps us position shapes.
         // It starts over as the identity every single frame - coordinate axes at the origin.
         let model_transform = Mat4.identity();
