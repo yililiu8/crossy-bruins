@@ -426,7 +426,7 @@ const Color = tiny.Color =
             return v;
         }
 
-        // Create color from Hex numbers
+        // Create color from hexadecimal numbers, e.g., #FFFFFF
         static create_from_hex(hex, alpha = 1.) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             const v = new Vector4(4);
