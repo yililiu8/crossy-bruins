@@ -412,9 +412,36 @@ const vec4 = tiny.vec4 = Vector4.create;
 const unsafe3 = tiny.unsafe3 = Vector3.unsafe;
 const unsafe4 = tiny.unsafe4 = Vector4.unsafe;
 
-// **Color** is just an alias for class Vector4.  Colors should be made as special 4x1
+// **Color** is an alias for class Vector4.  Colors should be made as special 4x1
 // vectors expressed as ( red, green, blue, opacity ) each ranging from 0 to 1.
-const color = tiny.color = Vector4.create;
+const Color = tiny.Color =
+    class Color extends Vector4 {
+        // Create color from RGBA floats
+        static create_from_float(r, g, b, a) {
+            const v = new Vector4(4);
+            v[0] = r;
+            v[1] = g;
+            v[2] = b;
+            v[3] = a;
+            return v;
+        }
+
+        // Create color from Hex numbers
+        static create_from_hex(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            const v = new Vector4(4);
+            if (result) {
+                v[0] = parseInt(result[1], 16) / 256.;
+                v[1] = parseInt(result[2], 16) / 256.;
+                v[2] = parseInt(result[3], 16) / 256.;
+                v[3] = 1.;
+            }
+            return v;
+        }
+    }
+
+const color = tiny.color = Color.create_from_float;
+const hex_color = tiny.hex_color = Color.create_from_hex;
 
 const Matrix = tiny.Matrix =
     class Matrix extends Array {
