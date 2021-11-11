@@ -4,7 +4,7 @@ import {Shape_From_File} from './examples/obj-file-demo.js'
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
 } = tiny;
-const {Triangle, Square, Tetrahedron, Windmill, Subdivision_Sphere} = defs;
+const {Triangle, Square, Tetrahedron, Windmill, Subdivision_Sphere, Cylindrical_Tube} = defs;
 
 class Cube extends Shape {
     constructor() {
@@ -37,11 +37,12 @@ class Cube extends Shape {
 
             this.shapes = {
                 sheet: new defs.Grid_Patch(150, 150, row_operation, column_operation),
-                lane: new defs.Grid_Patch(15, 200, row_operation, column_operation),
+                lane: new defs.Grid_Patch(20, 200, row_operation, column_operation),
                 cube: new Cube(),
                 sphere: new defs.Subdivision_Sphere(2),
                 rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
                 bear: new Shape_From_File("assets/bear.obj"),
+                leaf: new defs.Capped_Cylinder(0.05, 10),
             };
     
             // *** Materials
@@ -50,10 +51,14 @@ class Cube extends Shape {
                     {ambient: 1, diffusivity: .6, color: hex_color("#C1F376")}),
                 road: new Material(new defs.Phong_Shader(),
                     {ambient: 1, diffusivity: .6, color: hex_color("#555555")}),
+                river: new Material(new defs.Phong_Shader(),
+                    {ambient: 1, diffusivity: .6, color: hex_color("#59bfff")}),
                 bruin: new Material(new defs.Phong_Shader(),
                     {ambient: 1, diffusivity: .6, color: hex_color("#964B00"), specularity: 1}),
                 rock: new Material(new defs.Phong_Shader(),
                     {ambient: 1, diffusivity: .6, color: hex_color("#999999")}),
+                leaf: new Material(new defs.Phong_Shader(),
+                    {ambient: 1, diffusivity: .6, color: hex_color("#13ae4b")}),
             }
     
             this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
@@ -73,33 +78,57 @@ class Cube extends Shape {
             this.generate_lanes(); 
 
             this.rock_positions = {}; 
-            this.generate_rocks(); 
+            this.leaf_positions = {}; 
+            this.generate_rocks_and_leafs(); 
         }
 
         generate_lanes() {
             var lane = []; 
             for(let i = 0; i < this.lane_num; i++) {
-              lane.push(Math.floor(Math.random() * 2)); 
+                let val = Math.floor(Math.random() * 11); 
+                if(val < 5) {
+                    lane.push(0); // grass
+                }
+                else if(val < 10) {
+                    lane.push(1); //road
+                }
+                else {
+                    lane.push(2); // river has 1/11 probability
+                }
             }
             this.lane_type = lane; 
         }
 
-        generate_rocks() {
+        generate_rocks_and_leafs() {
             var rock_pos = {};
+            var leaf_pos = {};
             for(let i = 0; i < this.lane_num; i++) {
-                //generate rocks
+                //generate rocks on grass areas
                 var should_generate_rock = Math.floor(Math.random() * 2);
                 if(should_generate_rock === 1 && this.lane_type[i] === 0) {
-                    console.log("rock");
-                    var pos = Math.floor(Math.random() * 14);
-                    if(pos < 7) {
+                    var pos = Math.floor(Math.random() * 13);
+                    if(pos < 6) {
                         rock_pos[i] = -1 * pos; 
                     } else {
                         rock_pos[i] = pos-7; 
                     }
                 }
+                //generate leafs for river
+                else if(this.lane_type[i] === 2) {
+                    let num_leafs = Math.floor(Math.random() * 6);
+                    leaf_pos[i] = [];
+                    for(let j = 0; j < num_leafs; j++) {
+                        let pos = Math.floor(Math.random() * 13);
+                        if(pos < 6) {
+                            leaf_pos[i].push(-1 * pos); 
+                        } else {
+                            leaf_pos[i].push(pos - 7);
+                        }
+                    }
+                }
             }
             this.rock_positions = rock_pos; 
+            this.leaf_positions = leaf_pos; 
             console.log(this.rock_positions)
         }
     
@@ -131,11 +160,11 @@ class Cube extends Shape {
 
         move_player() {
             if (this.moveUp) {
-                this.player_transform = this.player_transform.times(Mat4.translation(0, 3, 0)); 
+                this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0)); 
                 this.moveUp = false; 
             } 
             if (this.moveDown) {
-                this.player_transform = this.player_transform.times(Mat4.translation(0, -3, 0));
+                this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
                 this.moveDown = false; 
             } 
             if (this.moveRight) {
@@ -177,14 +206,21 @@ class Cube extends Shape {
 
                     //rocks
                     if(this.rock_positions[i] !== undefined) {
-                        var rock_transform = model_transform.times(Mat4.translation(this.rock_positions[i], 1.5, 1)); 
+                        var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1)); 
                         this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                     }
-                } else { //road
+                } else if(this.lane_type[i] === 1){ //road
                     //this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor.override({color: hex_color("#555555")}));
                     this.shapes.lane.draw(context, program_state, model_transform, this.materials.road);
+                } else {
+                    this.shapes.lane.draw(context, program_state, model_transform, this.materials.river);
+
+                    for(let k = 0; k < this.leaf_positions[i].length; k++) {
+                        var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -13, 1)); 
+                        this.shapes.leaf.draw(context, program_state, leaf_transform, this.materials.leaf);
+                    }
                 }
-                model_transform = model_transform.times(Mat4.translation(0, 3, 0));
+                model_transform = model_transform.times(Mat4.translation(0, 4, 0));
             }
             
             
