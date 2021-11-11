@@ -80,6 +80,8 @@ class Cube extends Shape {
             this.rock_positions = {}; 
             this.leaf_positions = {}; 
             this.generate_rocks_and_leafs(); 
+
+            this.score = 0; 
         }
 
         generate_lanes() {
@@ -117,7 +119,7 @@ class Cube extends Shape {
                 else if(this.lane_type[i] === 2) {
                     let num_leafs = Math.floor(Math.random() * 6);
                     leaf_pos[i] = [];
-                    for(let j = 0; j < num_leafs; j++) {
+                    for(let j = 0; j < num_leafs+1; j++) {
                         let pos = Math.floor(Math.random() * 13);
                         if(pos < 6) {
                             leaf_pos[i].push(-1 * pos); 
@@ -133,6 +135,12 @@ class Cube extends Shape {
         }
     
         make_control_panel() {
+            this.live_string(box => {
+                box.textContent = "Score: " + this.score
+            
+            });
+            this.new_line(); 
+            this.new_line(); 
             this.key_triggered_button("Up", ["u"], () => {
                 this.moveUp = true;
             });
@@ -145,7 +153,9 @@ class Cube extends Shape {
             this.key_triggered_button("Right", ["k"], () => {
                 this.moveRight = true;
             });
+            
         }
+
 
         // need to figure out how to get camera to be angled
         set_camera_view(program_state) {
@@ -161,10 +171,12 @@ class Cube extends Shape {
         move_player() {
             if (this.moveUp) {
                 this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0)); 
+                this.score += 1; 
                 this.moveUp = false; 
             } 
             if (this.moveDown) {
                 this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
+                this.score -= 1; 
                 this.moveDown = false; 
             } 
             if (this.moveRight) {
