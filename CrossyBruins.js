@@ -4,7 +4,7 @@ import {Shape_From_File} from './examples/obj-file-demo.js'
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
 } = tiny;
-const {Triangle, Square, Tetrahedron, Windmill, Subdivision_Sphere, Cylindrical_Tube} = defs;
+const {Triangle, Square, Tetrahedron, Windmill, Subdivision_Sphere, Cylindrical_Tube, Textured_Phong} = defs;
 
 class Cube extends Shape {
     constructor() {
@@ -41,7 +41,7 @@ class Cube extends Shape {
                 cube: new Cube(),
                 sphere: new defs.Subdivision_Sphere(2),
                 rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
-                bear: new Shape_From_File("assets/bear.obj"),
+                bear: new Shape_From_File("assets/bear3.obj"),
                 leaf: new defs.Capped_Cylinder(0.05, 10),
             };
     
@@ -51,6 +51,11 @@ class Cube extends Shape {
                     {ambient: 1, diffusivity: .6, color: hex_color("#C1F376")}),
                 road: new Material(new defs.Phong_Shader(),
                     {ambient: 1, diffusivity: .6, color: hex_color("#555555")}),
+                /*road: new Material(new Textured_Phong(), {
+                    color: hex_color("#000000"),
+                    ambient: 1,
+                    texture: new Texture("assets/rgb.jpg", "NEAREST")
+                }), // for textures when we need them */
                 river: new Material(new defs.Phong_Shader(),
                     {ambient: 1, diffusivity: .6, color: hex_color("#59bfff")}),
                 bruin: new Material(new defs.Phong_Shader(),
@@ -63,22 +68,24 @@ class Cube extends Shape {
     
             this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
 
+            // detect movements 
             this.moveUp = false;
             this.moveDown = false; 
             this.moveLeft = false; 
             this.moveRight = false; 
             
+            // player's model transform 
             this.player_transform = Mat4.identity().times(Mat4.translation(0, -1, 1)); 
             this.attached = this.player_transform
 
             this.camera_location = this.initial_camera_location;
 
-            this.lane_type = [];
-            this.lane_num = 1000; 
+            this.lane_type = []; // holds randomly generated type of lane for all lanes  (0 = grass, 1 = road, 2 == river)
+            this.lane_num = 1000; // constant for max number of generated lanes
             this.generate_lanes(); 
 
-            this.rock_positions = {}; 
-            this.leaf_positions = {}; 
+            this.rock_positions = {}; // dictionary for rocks positions: key = lane number, value = placement in lane 
+            this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
             this.generate_rocks_and_leafs(); 
 
             this.score = 0; 
@@ -89,10 +96,10 @@ class Cube extends Shape {
             for(let i = 0; i < this.lane_num; i++) {
                 let val = Math.floor(Math.random() * 11); 
                 if(val < 5) {
-                    lane.push(0); // grass
+                    lane.push(0); // grass: 5/11 probability
                 }
                 else if(val < 10) {
-                    lane.push(1); //road
+                    lane.push(1); //road: 5/11 probability
                 }
                 else {
                     lane.push(2); // river has 1/11 probability
@@ -106,9 +113,10 @@ class Cube extends Shape {
             var leaf_pos = {};
             for(let i = 0; i < this.lane_num; i++) {
                 //generate rocks on grass areas
+                //should_generate_rocks tells us whether or not we should add a rock to the lane (0 = no, 1 = yes)
                 var should_generate_rock = Math.floor(Math.random() * 2);
-                if(should_generate_rock === 1 && this.lane_type[i] === 0) {
-                    var pos = Math.floor(Math.random() * 13);
+                if(should_generate_rock === 1 && this.lane_type[i] === 0) { // only add rock if lane type is 0 (grass)
+                    var pos = Math.floor(Math.random() * 13); // gets random position for rock in lane
                     if(pos < 6) {
                         rock_pos[i] = -1 * pos; 
                     } else {
@@ -116,10 +124,13 @@ class Cube extends Shape {
                     }
                 }
                 //generate leafs for river
+                //only add leaf if lane type is 2 (river)
                 else if(this.lane_type[i] === 2) {
-                    let num_leafs = Math.floor(Math.random() * 6);
+                    // all river lanes needed at least 1 leaf so player can cross
+                    // generate a random number between 1 and 6 for the number of leafs in a lane
+                    let num_leafs = Math.floor(Math.random() * 6); 
                     leaf_pos[i] = [];
-                    for(let j = 0; j < num_leafs+1; j++) {
+                    for(let j = 0; j < num_leafs+1; j++) { // find a random position for all n leafs
                         let pos = Math.floor(Math.random() * 13);
                         if(pos < 6) {
                             leaf_pos[i].push(-1 * pos); 
@@ -137,12 +148,11 @@ class Cube extends Shape {
         make_control_panel() {
             this.live_string(box => {
                 box.textContent = "Score: " + this.score
-            
             });
             this.new_line(); 
             this.new_line(); 
             this.key_triggered_button("Up", ["u"], () => {
-                this.moveUp = true;
+                this.moveUp = true;    
             });
             this.key_triggered_button("Down", ["j"], () => {
                 this.moveDown = true;
@@ -156,8 +166,8 @@ class Cube extends Shape {
             
         }
 
-
-        // need to figure out how to get camera to be angled
+        // NOTE: still need to figure out how to get camera to be angled
+        // sets camera to be in player's pov (follows player)
         set_camera_view(program_state) {
             if (this.attached != undefined) {
                 var blending_factor = 0.1, desired;
@@ -165,9 +175,9 @@ class Cube extends Shape {
                 desired = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, blending_factor)); 
                 program_state.set_camera(desired);
             }
-            //program_state.set_camera(Mat4.translation(-8, -10, -30));
         }
 
+        // if player hits one of the movement keys, translate player's coordinates in that direction 
         move_player() {
             if (this.moveUp) {
                 this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0)); 
@@ -212,8 +222,8 @@ class Cube extends Shape {
             program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
             
             //generate game scene
-            for(var i = 0; i < this.lane_num; i++) {
-                if(this.lane_type[i] === 0) { // grass
+            for(var i = 0; i < this.lane_num; i++) { // generate every lane till max lanes
+                if(this.lane_type[i] === 0) { // grass - currently green lanes
                     this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor);
 
                     //rocks
@@ -221,12 +231,13 @@ class Cube extends Shape {
                         var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1)); 
                         this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                     }
-                } else if(this.lane_type[i] === 1){ //road
+                } else if(this.lane_type[i] === 1){ //road - currently gray lanes 
                     //this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor.override({color: hex_color("#555555")}));
                     this.shapes.lane.draw(context, program_state, model_transform, this.materials.road);
-                } else {
+                } else { // river - currently blue lanes
                     this.shapes.lane.draw(context, program_state, model_transform, this.materials.river);
 
+                    // leaf pads 
                     for(let k = 0; k < this.leaf_positions[i].length; k++) {
                         var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -13, 1)); 
                         this.shapes.leaf.draw(context, program_state, leaf_transform, this.materials.leaf);
@@ -235,10 +246,8 @@ class Cube extends Shape {
                 model_transform = model_transform.times(Mat4.translation(0, 4, 0));
             }
             
-            
-            this.move_player(); 
-            
             //player
+            this.move_player(); 
             this.shapes.cube.draw(context, program_state, this.player_transform, this.materials.bruin);
             this.attached = this.player_transform; 
 
