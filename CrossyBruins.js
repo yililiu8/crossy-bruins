@@ -24,6 +24,32 @@ class Cube extends Shape {
     }
 }
 
+class Car {
+    constructor(model_transform, color, direction) {
+        this.model_transform = model_transform;
+        let colors = [hex_color("#FF0000"), hex_color("#00FF00"), hex_color("#673AB7"), hex_color("#03A9F4"), hex_color("#FFFF33")]; // red, green, purple, blue, yellow
+        this.color = colors[Math.floor(Math.random() * 5)];
+        this.direction = direction
+        //may also need a car type if we have multiple types of cars
+    }
+
+    getDirection() {
+        return this.direction; // 1 = right, -1 = left
+    }
+
+    getPosition() {
+        return this.model_transform; 
+    }
+
+    getColor() {
+        return this.color;
+    }
+
+    setPosition(pos) {
+        this.model_transform = pos; 
+    }
+}
+
 
 export class CrossyBruins extends Scene {
     constructor() {
@@ -86,14 +112,14 @@ export class CrossyBruins extends Scene {
 
         this.rock_positions = {}; // dictionary for rocks positions: key = lane number, value = placement in lane 
         this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
-        this.car_positions = {}; 
+        this.car_positions = {}; // dictionary for car positions: key = lane number, value = array/list of Mat4 (model transforms) for all cars in lane
         this.generate_rocks_and_leafs();
         this.generate_cars(); 
 
         this.car_lane_min = 0; 
         this.car_lane_max = 19; 
 
-        this.car_speed = 0.2; 
+        this.car_speed = 0.1;  
         this.score = 0;
     }
 
@@ -144,6 +170,10 @@ export class CrossyBruins extends Scene {
                         leaf_pos[i].push(pos - 7);
                     }
                 }
+
+                if(i !== 0 && this.lane_type[i-1] === 2) {
+                    leaf_pos[i-1].push(leaf_pos[i][0]); // at least one leaf needs to be in the same column if there are two rivers in a row
+                }
             }
         }
         this.rock_positions = rock_pos;
@@ -151,12 +181,29 @@ export class CrossyBruins extends Scene {
         console.log(this.rock_positions)
     }
 
+    generate_cars_for_lane() {
+        var pos = []; 
+        let direction = Math.floor(Math.random() * 2) == 0? -1 : 1; 
+        var x_pos = Math.floor(Math.random() * 5) - 15;
+        let car_num = Math.floor(Math.random() * 2) == 0 ? 3 : 4; // vary car num per lane so it doesn't look too uniform
+        for(let i = 0; i < car_num; i++) {
+            var dist_between = Math.floor(Math.random() * 4); // get random distance between cars
+            let car_transform = Mat4.identity().times(Mat4.translation(dist_between + x_pos, -1, 1));
+            pos.push(new Car(car_transform, 0, direction)); 
+            //pos.push(Mat4.identity().times(Mat4.translation(dist_between + x_pos, -1, 1)));
+            x_pos += (car_num == 4 ? 9 : 13) + dist_between;
+        }
+        return pos; 
+    }
+
     generate_cars() {
+        // start off game by only generating 20 lanes of car positions to save memory/be more efficient - use dynamic instantiation as game goes on
         var car_pos = {};
         for(let i = 0; i < 20; i++) {
-            car_pos[i] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+            car_pos[i] = this.generate_cars_for_lane();
         }
         this.car_positions = car_pos;
+        //console.log(this.car_positions);
     }
 
     make_control_panel() {
@@ -197,6 +244,7 @@ export class CrossyBruins extends Scene {
             this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0));
             this.score += 1;
             this.moveUp = false;
+            this.car_speed += .001; // as the score gets higher, car speed gets faster too
 
             this.car_dynamic_instantiation(1); 
         }
@@ -204,6 +252,7 @@ export class CrossyBruins extends Scene {
             this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
             this.score -= 1;
             this.moveDown = false;
+            this.car_speed -= .001; 
 
             this.car_dynamic_instantiation(-1); 
         }
@@ -217,17 +266,18 @@ export class CrossyBruins extends Scene {
         }
     }
 
+    // only keeping track of the lanes that we can see / are coming up saves memory 
     car_dynamic_instantiation(dir) {
         if(dir === 1) { // 1 = up 
             delete this.car_positions[this.car_lane_min];
             this.car_lane_min += 1; 
-            this.car_positions[this.car_lane_max] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+            this.car_positions[this.car_lane_max] = this.generate_cars_for_lane();
             this.car_lane_max += 1; 
         }
         else { // -1 = down
             delete this.car_positions[this.car_lane_max];
             this.car_lane_min -= 1; 
-            this.car_positions[this.car_lane_min] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+            this.car_positions[this.car_lane_min] = this.generate_cars_for_lane();
             this.car_lane_max -= 1; 
         }
     }
@@ -269,8 +319,20 @@ export class CrossyBruins extends Scene {
 
                 // cars
                 if (this.car_positions[i] !== undefined) {
-                    this.shapes.cube.draw(context, program_state, model_transform.times(this.car_positions[i]).times(Mat4.translation(0, -12, 1)), this.materials.rock);
-                    this.car_positions[i] = this.car_positions[i].times(Mat4.translation(this.car_speed, 0, 0));
+                    for(let k = 0; k < this.car_positions[i].length; k++) {
+                        let car_transform = this.car_positions[i][k].getPosition(); 
+                        let dir = this.car_positions[i][k].getDirection(); 
+                        let color = this.car_positions[i][k].getColor(); 
+                        this.shapes.cube.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 1)), this.materials.rock.override({color: color}));
+                        this.car_positions[i][k].setPosition(car_transform.times(Mat4.translation(this.car_speed * dir, 0, 0)));
+
+                        // dynamic instantiation for car - if car reaches end of board -> reset it's position to very begining of board
+                        if((car_transform[0][3] > 24 && dir === 1) || (car_transform[0][3] < -14 && dir === -1)) { 
+                            // replace out of bounds car with new one
+                            let start_loc = dir === 1 ? -14 : 24; 
+                            this.car_positions[i].splice(k, 1, new Car(Mat4.identity().times(Mat4.translation(start_loc, -1, 1)), 0, dir)); 
+                        }
+                    }
                 }
             } else { // river - currently blue lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.river);
@@ -292,6 +354,3 @@ export class CrossyBruins extends Scene {
         this.set_camera_view(program_state);
     }
 }
-
-
-
