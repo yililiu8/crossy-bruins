@@ -86,8 +86,14 @@ export class CrossyBruins extends Scene {
 
         this.rock_positions = {}; // dictionary for rocks positions: key = lane number, value = placement in lane 
         this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
+        this.car_positions = {}; 
         this.generate_rocks_and_leafs();
+        this.generate_cars(); 
 
+        this.car_lane_min = 0; 
+        this.car_lane_max = 19; 
+
+        this.car_speed = 0.2; 
         this.score = 0;
     }
 
@@ -145,6 +151,14 @@ export class CrossyBruins extends Scene {
         console.log(this.rock_positions)
     }
 
+    generate_cars() {
+        var car_pos = {};
+        for(let i = 0; i < 20; i++) {
+            car_pos[i] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+        }
+        this.car_positions = car_pos;
+    }
+
     make_control_panel() {
         this.live_string(box => {
             box.textContent = "Score: " + this.score
@@ -183,11 +197,15 @@ export class CrossyBruins extends Scene {
             this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0));
             this.score += 1;
             this.moveUp = false;
+
+            this.car_dynamic_instantiation(1); 
         }
         if (this.moveDown) {
             this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
             this.score -= 1;
             this.moveDown = false;
+
+            this.car_dynamic_instantiation(-1); 
         }
         if (this.moveRight) {
             this.player_transform = this.player_transform.times(Mat4.translation(3, 0, 0));
@@ -196,6 +214,21 @@ export class CrossyBruins extends Scene {
         if (this.moveLeft) {
             this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
             this.moveLeft = false;
+        }
+    }
+
+    car_dynamic_instantiation(dir) {
+        if(dir === 1) { // 1 = up 
+            delete this.car_positions[this.car_lane_min];
+            this.car_lane_min += 1; 
+            this.car_positions[this.car_lane_max] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+            this.car_lane_max += 1; 
+        }
+        else { // -1 = down
+            delete this.car_positions[this.car_lane_max];
+            this.car_lane_min -= 1; 
+            this.car_positions[this.car_lane_min] = Mat4.identity().times(Mat4.translation(-10, -1, 1));
+            this.car_lane_max -= 1; 
         }
     }
 
@@ -231,9 +264,14 @@ export class CrossyBruins extends Scene {
                     var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1));
                     this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                 }
-            } else if (this.lane_type[i] === 1) { //road - currently gray lanes 
-                //this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor.override({color: hex_color("#555555")}));
+            } else if (this.lane_type[i] === 1) { //road - currently gray lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.road);
+
+                // cars
+                if (this.car_positions[i] !== undefined) {
+                    this.shapes.cube.draw(context, program_state, model_transform.times(this.car_positions[i]).times(Mat4.translation(0, -12, 1)), this.materials.rock);
+                    this.car_positions[i] = this.car_positions[i].times(Mat4.translation(this.car_speed, 0, 0));
+                }
             } else { // river - currently blue lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.river);
 
