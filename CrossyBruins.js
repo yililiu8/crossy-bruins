@@ -37,12 +37,12 @@ export class CrossyBruins extends Scene {
 
         this.shapes = {
             sheet: new defs.Grid_Patch(150, 150, row_operation, column_operation),
-            lane: new defs.Grid_Patch(20, 200, row_operation, column_operation),
+            lane: new defs.Grid_Patch(20, 200, row_operation, column_operation, [[0, 10], [0, 1]]),
             cube: new Cube(),
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
             bear: new Shape_From_File("assets/bear3.obj"),
-            leaf: new defs.Capped_Cylinder(0.05, 10),
+            leaf: new defs.Capped_Cylinder(0.05, 10)
         };
 
         // *** Materials
@@ -51,11 +51,21 @@ export class CrossyBruins extends Scene {
                 { ambient: 1, diffusivity: .6, color: hex_color("#C1F376") }),
             road: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#555555") }),
-            /*road: new Material(new Textured_Phong(), {
+            texturedGrass: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
-                ambient: 1,
-                texture: new Texture("assets/rgb.jpg", "NEAREST")
-            }), // for textures when we need them */
+                ambient: 1, diffusivity: 0.1, specularity: 0.1,
+                texture: new Texture("assets/grasslane.png")
+            }),
+            texturedRiver: new Material(new  Textured_Phong(), {
+                color: hex_color("#000000"),
+                ambient: 1, diffusivity: 0.1, specularity: 0.1,
+                texture: new Texture("assets/riverlane.jpg")
+            }),
+            texturedRoad: new Material(new Textured_Phong(), {
+                color: hex_color("#000000"),
+                ambient: 1, diffusivity: 0.1, specularity: 0.1,
+                texture: new Texture("assets/roadlane.png") // roadlane.png or road2.jpg
+            }),
             river: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#59bfff") }),
             bruin: new Material(new defs.Phong_Shader(),
@@ -63,7 +73,7 @@ export class CrossyBruins extends Scene {
             rock: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#999999") }),
             leaf: new Material(new defs.Phong_Shader(),
-                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") }),
+                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") })
         }
 
         this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
@@ -224,7 +234,7 @@ export class CrossyBruins extends Scene {
         //generate game scene
         for (var i = 0; i < this.lane_num; i++) { // generate every lane till max lanes
             if (this.lane_type[i] === 0) { // grass - currently green lanes
-                this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor);
+                this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedGrass);
 
                 //rocks
                 if (this.rock_positions[i] !== undefined) {
@@ -233,9 +243,9 @@ export class CrossyBruins extends Scene {
                 }
             } else if (this.lane_type[i] === 1) { //road - currently gray lanes 
                 //this.shapes.lane.draw(context, program_state, model_transform, this.materials.floor.override({color: hex_color("#555555")}));
-                this.shapes.lane.draw(context, program_state, model_transform, this.materials.road);
+                this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedRoad);
             } else { // river - currently blue lanes
-                this.shapes.lane.draw(context, program_state, model_transform, this.materials.river);
+                this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedRiver);
 
                 // leaf pads 
                 for (let k = 0; k < this.leaf_positions[i].length; k++) {
@@ -254,6 +264,3 @@ export class CrossyBruins extends Scene {
         this.set_camera_view(program_state);
     }
 }
-
-
-
