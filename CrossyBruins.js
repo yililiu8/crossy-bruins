@@ -114,6 +114,10 @@ export class CrossyBruins extends Scene {
 
         this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
 
+        this.setup_game(); 
+    }
+
+    setup_game() {
         // detect movements 
         this.moveUp = false;
         this.moveDown = false;
@@ -246,6 +250,11 @@ export class CrossyBruins extends Scene {
         this.key_triggered_button("Right", ["k"], () => {
             this.moveRight = true;
         });
+        this.new_line(); 
+        this.new_line(); 
+        this.key_triggered_button("Restart", ["r"], () => {
+            this.setup_game(); 
+        });
 
     }
 
@@ -311,11 +320,11 @@ export class CrossyBruins extends Scene {
         this.shapes.lane.draw(context, program_state, start_transform.times(Mat4.translation(0, 13, -1)), this.materials.texturedRoad);
         this.shapes.cube.draw(context, program_state, start_transform.times(Mat4.translation(0, 0, -1)), this.materials.endScreen);
 
-        let string = "You Lost! \n\nScore: " + this.score;
+        let string = "     You Lost! \n\n     Score: " + this.score + "\n\nPress r to Restart";
         const multi_line_string = string.split("\n");
         let cube_side = Mat4.rotation(0, 1, 0, 0)
                             .times(Mat4.rotation(0, 0, 1, 0))
-                            .times(Mat4.translation(-.3, .1, 0.9));
+                            .times(Mat4.translation(-.64, .2, 0.9));
         for (let line of multi_line_string.slice(0, 30)) {
             this.shapes.text.set_string(line, context.context);
             this.shapes.text.draw(context, program_state, cube_side.times(Mat4.scale(.05, .05, .05)), this.materials.text_image);
