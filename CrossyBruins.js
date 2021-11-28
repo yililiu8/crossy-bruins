@@ -1,5 +1,6 @@
 import { defs, tiny } from './examples/common.js';
 import { Shape_From_File } from './examples/obj-file-demo.js'
+import {Text_Line} from './examples/text-demo.js'
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
@@ -68,8 +69,9 @@ export class CrossyBruins extends Scene {
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
             bear: new Shape_From_File("assets/bear3.obj"),
-            leaf: new defs.Capped_Cylinder(0.05, 10)
-        };
+            leaf: new defs.Capped_Cylinder(0.05, 10),
+            text: new Text_Line(35)
+        }
 
         // *** Materials
         this.materials = {
@@ -99,7 +101,15 @@ export class CrossyBruins extends Scene {
             rock: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#999999") }),
             leaf: new Material(new defs.Phong_Shader(),
-                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") })
+                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") }),
+            endScreen: new Material(new defs.Phong_Shader(), {
+                    color: hex_color("#1E3F66"), ambient: 1,
+                    diffusivity: 0.6, specularity:0.1
+            }),
+            text_image: new Material(new defs.Textured_Phong(1), {
+                    ambient: 1, diffusivity: 0, specularity: 0,
+                    texture: new Texture("assets/text.png")
+            })      
         }
 
         this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
@@ -131,6 +141,8 @@ export class CrossyBruins extends Scene {
 
         this.car_speed = 0.1;  
         this.score = 0;
+
+        this.game_ended = false; // set this to true if player collided and game is over
     }
 
     generate_lanes() {
@@ -292,6 +304,25 @@ export class CrossyBruins extends Scene {
         }
     }
 
+    display_end_game(context, program_state) {
+        program_state.set_camera(Mat4.look_at(...Vector.cast([0, 0, 4], [0, 0, 0], [0, 1, 0])));
+        
+        let start_transform = Mat4.identity();
+        this.shapes.lane.draw(context, program_state, start_transform.times(Mat4.translation(0, 13, -1)), this.materials.texturedRoad);
+        this.shapes.cube.draw(context, program_state, start_transform.times(Mat4.translation(0, 0, -1)), this.materials.endScreen);
+
+        let string = "You Lost! \n\nScore: " + this.score;
+        const multi_line_string = string.split("\n");
+        let cube_side = Mat4.rotation(0, 1, 0, 0)
+                            .times(Mat4.rotation(0, 0, 1, 0))
+                            .times(Mat4.translation(-.3, .1, 0.9));
+        for (let line of multi_line_string.slice(0, 30)) {
+            this.shapes.text.set_string(line, context.context);
+            this.shapes.text.draw(context, program_state, cube_side.times(Mat4.scale(.05, .05, .05)), this.materials.text_image);
+            cube_side.post_multiply(Mat4.translation(0, -0.09, 0));
+        }
+    }
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -313,6 +344,11 @@ export class CrossyBruins extends Scene {
         const angle = Math.sin(t);
         const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
+
+        if (this.game_ended) {
+            this.display_end_game(context, program_state); 
+            return; 
+        }
 
         //generate game scene
         for (var i = 0; i < this.lane_num; i++) { // generate every lane till max lanes
