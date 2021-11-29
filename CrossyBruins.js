@@ -41,7 +41,7 @@ export class CrossyBruins extends Scene {
             cube: new Cube(),
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
-            bear: new Shape_From_File("assets/bear3.obj"),
+            bear: new Shape_From_File("assets/newbear.obj"),
             leaf: new defs.Capped_Cylinder(0.05, 10),
         };
 
@@ -58,8 +58,8 @@ export class CrossyBruins extends Scene {
             }), // for textures when we need them */
             river: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#59bfff") }),
-            bruin: new Material(new defs.Phong_Shader(),
-                { ambient: 1, diffusivity: .6, color: hex_color("#964B00"), specularity: 1 }),
+            bruin: new Material(new Textured_Phong(),
+                { ambient: 1, texture: new Texture("assets/nolegbear_texture.png") }),   
             rock: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#999999") }),
             leaf: new Material(new defs.Phong_Shader(),
@@ -248,7 +248,7 @@ export class CrossyBruins extends Scene {
 
         //player
         this.move_player();
-        this.shapes.cube.draw(context, program_state, this.player_transform, this.materials.bruin);
+        this.shapes.bear.draw(context, program_state, this.player_transform, this.materials.bruin);
         this.attached = this.player_transform;
 
         this.set_camera_view(program_state);
