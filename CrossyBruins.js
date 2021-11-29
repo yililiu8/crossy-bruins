@@ -350,11 +350,19 @@ export class CrossyBruins extends Scene {
                     }
                 }
             }
+            if(this.lane_type[lane]===1){
+                if(this.check_collision_cars()){
+                this.game_ended = true;
+            }
+
+            }
 
             //check that player did not land in river 
             if(this.check_collision_in_river()) {
                 this.game_ended = true; 
             }
+
+            
         }
     }
 
@@ -363,6 +371,9 @@ export class CrossyBruins extends Scene {
         let playerX = this.player_transform[0][3];
         let playerY = this.player_transform[1][3];
         let laneY = -13 + (lane*4);
+//         console.log("player X:", playerX);
+//         console.log("player y:", playerY);
+//         console.log("lane y:", laneY);
         if (this.leaf_positions[lane] === undefined) {
             return false; 
         }
@@ -371,11 +382,55 @@ export class CrossyBruins extends Scene {
             var leaf_transform = Mat4.identity().times(Mat4.translation(3 + this.leaf_positions[lane][k] * 3, laneY, 1))
             var leafX = leaf_transform[0][3];
             var leafY = leaf_transform[1][3];
+//             console.log("player leaf trans:", leaf_transform);
+//             console.log("player leaf x:", leafX);
+//             console.log("player leaf y:", leafY);
             if(Math.sqrt(Math.pow(leafX - playerX, 2) + Math.pow(leafY - playerY, 2)) < 1) {
                 return false; 
             }
         }
         return true; 
+    }
+
+    check_collision_cars(){
+        let lane = this.score+3;
+        let playerX = this.player_transform[0][3];
+        let playerY = this.player_transform[1][3];
+        let laneY = -13 + (lane*4);
+//         console.log("player X: ",playerX);
+//         console.log("player Y: ",playerY);
+//         console.log("lane y: ",laneY);
+
+        if(this.car_positions[lane]=== undefined){
+            return false;
+        }
+
+        for(let k=0; k< this.car_positions[lane].length; k++){
+             var car_transform = this.car_positions[lane][k].getPosition();
+             var dir = this.car_positions[lane][k].getDirection();
+             console.log("dir: ", dir);
+
+             var car_moved = Mat4.identity().times(car_transform).times(Mat4.translation(0, -12, 1));
+             var carX = car_moved[0][3];
+             var carY = car_moved[1][3];
+//              console.log("car moved: ", k ,",  ", car_moved);
+             if(((playerX <= carX && carX <= playerX +3.0) || (carX <= playerX && playerX<= carX+3.0)) && dir === 1){
+//                  console.log("HIT");
+//                  console.log("car x: ", carY);
+//                  console.log("car y: ", carY);
+                 return true;
+             }
+             else if(((playerX-3.0 <= carX && carX <= playerX) || (carX-3.0 <= playerX && playerX<=carX))&& dir === -1){
+//                  console.log("HIT");
+//                  console.log("car x: ", carX);
+//                  console.log("car y: ", carY);
+                 return true;                 
+             }
+
+        }
+
+
+        return false;
     }
 
     // only keeping track of the lanes that we can see / are coming up saves memory 
