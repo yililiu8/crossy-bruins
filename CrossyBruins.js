@@ -126,6 +126,7 @@ export class CrossyBruins extends Scene {
         this.moveDown = false;
         this.moveLeft = false;
         this.moveRight = false;
+        this.playerMoved = false; 
 
         // player's model transform 
         this.player_transform = Mat4.identity().times(Mat4.translation(0, -1, 1));
@@ -258,15 +259,19 @@ export class CrossyBruins extends Scene {
         this.new_line();
         this.key_triggered_button("Up", ["u"], () => {
             this.moveUp = true;
+            this.playerMoved = true;
         });
         this.key_triggered_button("Down", ["j"], () => {
             this.moveDown = true;
+            this.playerMoved = true;
         });
         this.key_triggered_button("Left", ["h"], () => {
             this.moveLeft = true;
+            this.playerMoved = true;
         });
         this.key_triggered_button("Right", ["k"], () => {
             this.moveRight = true;
+            this.playerMoved = true;
         });
         this.new_line(); 
         this.new_line(); 
@@ -312,6 +317,34 @@ export class CrossyBruins extends Scene {
         if (this.moveLeft) {
             this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
             this.moveLeft = false;
+        }
+        // check collision detection for rocks and trees only if the player just moved
+        if(this.playerMoved) {
+            let model_transform = Mat4.identity();
+            this.playerMoved = false;
+            var playerX = this.player_transform[0][3];
+            var playerY = this.player_transform[1][3];
+            for (var i = 0; i < this.lane_num; i++) {
+                if (this.lane_type[i] === 0) {
+                    if (this.rock_positions[i] !== undefined) {
+                        var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1));
+                        var rockX = rock_transform[0][3];
+                        var rockY = rock_transform[1][3];
+                        if(Math.sqrt(Math.pow(rockX - playerX, 2) + Math.pow(rockY - playerY, 2)) < 1) {
+                            this.game_ended = true;
+                        }
+                    }
+                    else if(this.tree_positions[i] !== undefined) {
+                        var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                        var treeX = tree_transform[0][3];
+                        var treeY = tree_transform[1][3];
+                        if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
+                            this.game_ended = true;
+                        }
+                    }
+                }
+                model_transform = model_transform.times(Mat4.translation(0, 4, 0));
+            }
         }
     }
 
