@@ -73,7 +73,7 @@ export class Text_Demo extends Scene {             // **Text_Demo** is a scene w
         program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
 
         const t = program_state.animation_time / 1000;
-        const funny_orbit = Mat4.rotation(Math.PI / 4 * t, Math.cos(t), Math.sin(t), .7 * Math.cos(t));
+        const funny_orbit = Mat4.identity();//Mat4.rotation(Math.PI / 4 * t, Math.cos(t), Math.sin(t), .7 * Math.cos(t));
         this.shapes.cube.draw(context, program_state, funny_orbit, this.grey);
 
 
