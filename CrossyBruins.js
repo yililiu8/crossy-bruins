@@ -253,7 +253,7 @@ export class CrossyBruins extends Scene {
 
     make_control_panel() {
         this.live_string(box => {
-            box.textContent = "Score: " + this.score
+            box.textContent = "Score: " + (this.score < 0 ? 0 : this.score)
         });
         this.new_line();
         this.new_line();
@@ -318,34 +318,64 @@ export class CrossyBruins extends Scene {
             this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
             this.moveLeft = false;
         }
-        // check collision detection for rocks and trees only if the player just moved
+        // check collision detection for non-moving objects/river only if the player just moved
         if(this.playerMoved) {
-            let model_transform = Mat4.identity();
             this.playerMoved = false;
-            var playerX = this.player_transform[0][3];
-            var playerY = this.player_transform[1][3];
-            for (var i = 0; i < this.lane_num; i++) {
-                if (this.lane_type[i] === 0) {
-                    if (this.rock_positions[i] !== undefined) {
-                        var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1));
-                        var rockX = rock_transform[0][3];
-                        var rockY = rock_transform[1][3];
-                        if(Math.sqrt(Math.pow(rockX - playerX, 2) + Math.pow(rockY - playerY, 2)) < 1) {
-                            this.game_ended = true;
-                        }
-                    }
-                    else if(this.tree_positions[i] !== undefined) {
-                        var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(90, 1, 0, 0));
-                        var treeX = tree_transform[0][3];
-                        var treeY = tree_transform[1][3];
-                        if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
-                            this.game_ended = true;
-                        }
+            let lane = this.score+3; 
+            let playerX = this.player_transform[0][3];
+            let playerY = this.player_transform[1][3];
+            let laneYCoords = -13 + (lane*4);
+
+            //check that player did not go out of bounds
+            if(playerX < -14 || playerX > 24 || this.score === -4 || this.score > this.lane_num) {
+                this.game_ended = true; 
+            }
+
+            //check collision detection for rocks and trees
+            if (this.lane_type[lane] === 0) {
+                if (this.rock_positions[lane] !== undefined) {
+                    var rock_transform = Mat4.identity().times(Mat4.translation(3 + this.rock_positions[lane] * 3, laneYCoords, 1));
+                    var rockX = rock_transform[0][3];
+                    var rockY = rock_transform[1][3];
+                    if(Math.sqrt(Math.pow(rockX - playerX, 2) + Math.pow(rockY - playerY, 2)) < 1) {
+                        this.game_ended = true;
                     }
                 }
-                model_transform = model_transform.times(Mat4.translation(0, 4, 0));
+                else if(this.tree_positions[lane] !== undefined) {
+                    var tree_transform = Mat4.identity().times(Mat4.translation(3 + this.tree_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                    var treeX = tree_transform[0][3];
+                    var treeY = tree_transform[1][3];
+                    if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
+                        this.game_ended = true;
+                    }
+                }
+            }
+
+            //check that player did not land in river 
+            if(this.check_collision_in_river()) {
+                this.game_ended = true; 
             }
         }
+    }
+
+    check_collision_in_river() {
+        let lane = this.score+3; 
+        let playerX = this.player_transform[0][3];
+        let playerY = this.player_transform[1][3];
+        let laneY = -13 + (lane*4);
+        if (this.leaf_positions[lane] === undefined) {
+            return false; 
+        }
+ 
+        for (let k = 0; k < this.leaf_positions[lane].length; k++) {
+            var leaf_transform = Mat4.identity().times(Mat4.translation(3 + this.leaf_positions[lane][k] * 3, laneY, 1))
+            var leafX = leaf_transform[0][3];
+            var leafY = leaf_transform[1][3];
+            if(Math.sqrt(Math.pow(leafX - playerX, 2) + Math.pow(leafY - playerY, 2)) < 1) {
+                return false; 
+            }
+        }
+        return true; 
     }
 
     // only keeping track of the lanes that we can see / are coming up saves memory 
@@ -371,7 +401,7 @@ export class CrossyBruins extends Scene {
         this.shapes.lane.draw(context, program_state, start_transform.times(Mat4.translation(0, 13, -1)), this.materials.texturedRoad);
         this.shapes.cube.draw(context, program_state, start_transform.times(Mat4.translation(0, 0, -1)), this.materials.endScreen);
 
-        let string = "     You Lost! \n\n     Score: " + this.score + "\n\nPress r to Restart";
+        let string = "     You Lost! \n\n     Score: " + (this.score < 0 ? 0 : this.score) + "\n\nPress r to Restart";
         const multi_line_string = string.split("\n");
         let cube_side = Mat4.rotation(0, 1, 0, 0)
                             .times(Mat4.rotation(0, 0, 1, 0))
