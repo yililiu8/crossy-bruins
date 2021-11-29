@@ -68,7 +68,8 @@ export class CrossyBruins extends Scene {
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
             bear: new Shape_From_File("assets/bear3.obj"),
-            leaf: new defs.Capped_Cylinder(0.05, 10)
+            leaf: new defs.Capped_Cylinder(0.05, 10),
+            tree: new Shape_From_File("assets/low_poly_tree/Lowpoly_tree_sample.obj")
         };
 
         // *** Materials
@@ -80,7 +81,7 @@ export class CrossyBruins extends Scene {
             texturedGrass: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture("assets/grasslane.png")
+                texture: new Texture("assets/grasslane.jpg")
             }),
             texturedRiver: new Material(new  Textured_Phong(), {
                 color: hex_color("#000000"),
@@ -99,7 +100,9 @@ export class CrossyBruins extends Scene {
             rock: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#999999") }),
             leaf: new Material(new defs.Phong_Shader(),
-                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") })
+                { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") }),
+            tree: new Material(new defs.Phong_Shader(),
+                { ambient: 1, diffusivity: .6, color: hex_color("#228C22") })
         }
 
         this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
@@ -121,6 +124,7 @@ export class CrossyBruins extends Scene {
         this.generate_lanes();
 
         this.rock_positions = {}; // dictionary for rocks positions: key = lane number, value = placement in lane 
+        this.tree_positions = {}; // dictionary for trees positions: key = lane number, value = placement in lane
         this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
         this.car_positions = {}; // dictionary for car positions: key = lane number, value = array/list of Mat4 (model transforms) for all cars in lane
         this.generate_rocks_and_leafs();
@@ -135,7 +139,11 @@ export class CrossyBruins extends Scene {
 
     generate_lanes() {
         var lane = [];
-        for (let i = 0; i < this.lane_num; i++) {
+        // first 4 lanes are grass so that player doesn't immediately get hit by a car
+        for (let i = 0; i < 4; i++) {
+            lane.push(0);
+        }
+        for (let i = 4; i < this.lane_num; i++) {
             let val = Math.floor(Math.random() * 11);
             if (val < 5) {
                 lane.push(0); // grass: 5/11 probability
@@ -153,16 +161,25 @@ export class CrossyBruins extends Scene {
     generate_rocks_and_leafs() {
         var rock_pos = {};
         var leaf_pos = {};
-        for (let i = 0; i < this.lane_num; i++) {
+        var tree_pos = {};
+        // start indices from 4 because first 4 lanes should have no obstacles, so that player doesn't start on an obstacle
+        for (let i = 4; i < this.lane_num; i++) {
             //generate rocks on grass areas
             //should_generate_rocks tells us whether or not we should add a rock to the lane (0 = no, 1 = yes)
             var should_generate_rock = Math.floor(Math.random() * 2);
-            if (should_generate_rock === 1 && this.lane_type[i] === 0) { // only add rock if lane type is 0 (grass)
+            if (this.lane_type[i] === 0) { // only add rock or tree if lane type is 0 (grass)
                 var pos = Math.floor(Math.random() * 13); // gets random position for rock in lane
+                var new_pos = pos;
                 if (pos < 6) {
-                    rock_pos[i] = -1 * pos;
+                    new_pos = -1 * pos;
                 } else {
-                    rock_pos[i] = pos - 7;
+                    new_pos = pos - 7;
+                }
+                if(should_generate_rock) {
+                    rock_pos[i] = new_pos;
+                }
+                else { // if not rock, generate tree
+                    tree_pos[i] = new_pos;
                 }
             }
             //generate leafs for river
@@ -188,7 +205,8 @@ export class CrossyBruins extends Scene {
         }
         this.rock_positions = rock_pos;
         this.leaf_positions = leaf_pos;
-        console.log(this.rock_positions)
+        this.tree_positions = tree_pos;
+        //console.log(this.rock_positions)
     }
 
     generate_cars_for_lane() {
@@ -324,6 +342,10 @@ export class CrossyBruins extends Scene {
                     var rock_transform = model_transform.times(Mat4.translation(3 + this.rock_positions[i] * 3, -13, 1));
                     this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                 }
+                else if(this.tree_positions[i] !== undefined) {
+                    var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                    this.shapes.tree.draw(context, program_state, tree_transform, this.materials.tree);
+                }
             } else if (this.lane_type[i] === 1) { //road - currently gray lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedRoad);
 
@@ -335,7 +357,7 @@ export class CrossyBruins extends Scene {
                         let color = this.car_positions[i][k].getColor(); 
                         this.shapes.cube.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 1)), this.materials.rock.override({color: color}));
                         this.car_positions[i][k].setPosition(car_transform.times(Mat4.translation(this.car_speed * dir, 0, 0)));
-
+                        
                         // dynamic instantiation for car - if car reaches end of board -> reset it's position to very begining of board
                         if((car_transform[0][3] > 24 && dir === 1) || (car_transform[0][3] < -14 && dir === -1)) { 
                             // replace out of bounds car with new one
@@ -355,7 +377,7 @@ export class CrossyBruins extends Scene {
             }
             model_transform = model_transform.times(Mat4.translation(0, 4, 0));
         }
-
+        
         //player
         this.move_player();
         this.shapes.cube.draw(context, program_state, this.player_transform, this.materials.bruin);
