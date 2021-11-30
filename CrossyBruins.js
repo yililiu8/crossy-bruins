@@ -350,14 +350,24 @@ export class CrossyBruins extends Scene {
                     }
                 }
             }
+            // checking that the player didn't collide with a car on the road
+            if(this.lane_type[lane]===1){
+                if(this.check_collision_cars()){
+                this.game_ended = true;
+            }
+
+            }
 
             //check that player did not land in river 
             if(this.check_collision_in_river()) {
                 this.game_ended = true; 
             }
+
+            
         }
     }
 
+    // collision detection with the river
     check_collision_in_river() {
         let lane = this.score+3; 
         let playerX = this.player_transform[0][3];
@@ -376,6 +386,40 @@ export class CrossyBruins extends Scene {
             }
         }
         return true; 
+    }
+    // collision detection with the cars
+    check_collision_cars(){
+        let lane = this.score+3;
+        let playerX = this.player_transform[0][3];
+        let playerY = this.player_transform[1][3];
+        let laneY = -13 + (lane*4);
+
+        if(this.car_positions[lane]=== undefined){
+            return false;
+        }
+
+        for(let k=0; k< this.car_positions[lane].length; k++){
+             var car_transform = this.car_positions[lane][k].getPosition();
+             var dir = this.car_positions[lane][k].getDirection();
+             console.log("dir: ", dir);
+
+             var car_moved = Mat4.identity().times(car_transform).times(Mat4.translation(0, -12, 1));
+             var carX = car_moved[0][3];
+             var carY = car_moved[1][3];
+
+             // checking if car is placed between the Bruin (playerX) or if Bruin is between the car
+             // When the cars are moving towards the right
+             if(((playerX <= carX && carX <= playerX +2.0) || (carX <= playerX && playerX<= carX+2.0)) && dir === 1){
+                 return true;
+             }
+             // checking if car is placed between the Bruin (playerX) or if Bruin is between the car
+             // When the cars are moving towards the left
+             else if(((playerX-2.0 <= carX && carX <= playerX) || (carX-2.0 <= playerX && playerX<=carX))&& dir === -1){
+                 return true;                 
+             }
+
+        }
+        return false;
     }
 
     // only keeping track of the lanes that we can see / are coming up saves memory 
@@ -472,7 +516,9 @@ export class CrossyBruins extends Scene {
                             let start_loc = dir === 1 ? -14 : 24; 
                             this.car_positions[i].splice(k, 1, new Car(Mat4.identity().times(Mat4.translation(start_loc, -1, 1)), 0, dir)); 
                         }
-                    }
+                        
+                    }                        
+                    
                 }
             } else { // river - currently blue lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedRiver);
@@ -485,11 +531,22 @@ export class CrossyBruins extends Scene {
             }
             model_transform = model_transform.times(Mat4.translation(0, 4, 0));
         }
+
+        // Checking if the cars collided with the Bruin when it's at rest
+        // when player hasn't moved and when we are on the road (lane = 1)
+        if(!this.playerMoved && this.lane_type[this.score+3]===1){
+            if(this.check_collision_cars()){
+                this.game_ended = true;
+            }
+        }
         
         //player
         this.move_player();
         this.shapes.cube.draw(context, program_state, this.player_transform, this.materials.bruin);
         this.attached = this.player_transform;
+
+
+            
 
         this.set_camera_view(program_state);
     }
