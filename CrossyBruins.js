@@ -74,6 +74,7 @@ export class CrossyBruins extends Scene {
             tree: new Shape_From_File("assets/tree.obj"),
             bush: new Shape_From_File("assets/bush_files/eb_house_plant_01.obj"),
             leaf: new Shape_From_File("assets/lilypad1.obj"),
+            frog: new defs.Subdivision_Sphere(1),
             text: new Text_Line(35)
         };
 
@@ -116,6 +117,8 @@ export class CrossyBruins extends Scene {
                 { ambient: 1, texture: new Texture("assets/tree_texture.png") }),
             bush: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#002800") }),
+
+            frog:new Material(new defs.Phong_Shader(), { ambient: 1, diffusivity: .6, color: hex_color("23705d") } ),
             endScreen: new Material(new defs.Phong_Shader(), {
                     color: hex_color("#1E3F66"), ambient: 1,
                     diffusivity: 0.6, specularity:0.1
@@ -168,6 +171,7 @@ export class CrossyBruins extends Scene {
         this.origin = null; 
 
         this.isJumping = false; 
+        this.drawFrog=false;
     }
 
     generate_lanes() {
@@ -229,15 +233,22 @@ export class CrossyBruins extends Scene {
                 leaf_pos[i] = [];
                 for (let j = 0; j < num_leafs + 2; j++) { // find a random position for all n leafs
                     let pos = Math.floor(Math.random() * 13);
+                    
                     if (pos < 6) {
                         leaf_pos[i].push(-1 * pos);
+                        this.drawFrog=true;
                     } else {
                         leaf_pos[i].push(pos - 7);
+                        this.drawFrog=false;
+
                     }
+
+                   
                 }
 
                 if(i !== 0 && this.lane_type[i-1] === 2) {
                     leaf_pos[i-1].push(leaf_pos[i][0]); // at least one leaf needs to be in the same column if there are two rivers in a row
+                    this.drawFrog=true;
                 }
             }
         }
@@ -561,6 +572,8 @@ export class CrossyBruins extends Scene {
             return; 
         }
 
+
+
         //generate game scene
         for (var i = 0; i < this.lane_num; i++) { // generate every lane till max lanes
             if (this.lane_type[i] === 0) { // grass - currently green lanes
@@ -616,6 +629,13 @@ export class CrossyBruins extends Scene {
                 for (let k = 0; k < this.leaf_positions[i].length; k++) {
                     var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -15, 1));
                     this.shapes.leaf.draw(context, program_state, leaf_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.leaf);
+                    if(this.leaf_positions[i][k]==1||this.leaf_positions[i][k]==2)
+                    {
+                      this.shapes.frog.draw(context, program_state,leaf_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.frog);  
+
+                    }
+                    
+                    
                 }
             }
             model_transform = model_transform.times(Mat4.translation(0, 4, 0));
