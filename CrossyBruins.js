@@ -130,7 +130,7 @@ export class CrossyBruins extends Scene {
         this.moveLeft = false;
         this.moveRight = false;
         this.playerMoved = false; 
-
+        this.playerDirection = "north";
         // player's model transform 
         this.player_transform = Mat4.identity().times(Mat4.translation(0, -1, 1));
         this.attached = this.player_transform
@@ -306,6 +306,7 @@ export class CrossyBruins extends Scene {
     move_player() {
         if (this.moveUp) {
             this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0));
+            this.playerDirection = "north";
             this.score += 1;
             this.moveUp = false;
             this.car_speed += .001; // as the score gets higher, car speed gets faster too
@@ -314,6 +315,7 @@ export class CrossyBruins extends Scene {
         }
         if (this.moveDown) {
             this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
+            this.playerDirection = "south";
             this.score -= 1;
             this.moveDown = false;
             this.car_speed -= .001; 
@@ -322,10 +324,12 @@ export class CrossyBruins extends Scene {
         }
         if (this.moveRight) {
             this.player_transform = this.player_transform.times(Mat4.translation(3, 0, 0));
+            this.playerDirection = "east";
             this.moveRight = false;
         }
         if (this.moveLeft) {
             this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
+            this.playerDirection = "west";
             this.moveLeft = false;
         }
         // check collision detection for non-moving objects/river only if the player just moved
@@ -565,14 +569,21 @@ export class CrossyBruins extends Scene {
         
         //player
         this.move_player();
+        
         // orient the bear/player correctly before displaying it
-        let player_rotated_transform = this.player_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0))
-            .times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.translation(0, 0.59, 0));
+        var player_rotated_transform = this.player_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)); // rotate bear so that it is standing upright, facing south
+        if(this.playerDirection == "north") {
+            player_rotated_transform = player_rotated_transform.times(Mat4.rotation(Math.PI, 0, 1, 0));
+        }
+        else if(this.playerDirection == "west") {
+            player_rotated_transform = player_rotated_transform.times(Mat4.rotation(-Math.PI/2, 0, 1, 0));
+        }
+        else if(this.playerDirection == "east") {
+            player_rotated_transform = player_rotated_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0));
+        }
+        player_rotated_transform = player_rotated_transform.times(Mat4.translation(0, 0.59, 0));
         this.shapes.bear.draw(context, program_state, player_rotated_transform, this.materials.bruin);
-        this.attached = this.player_transform;
-
-
-            
+        this.attached = this.player_transform;            
 
         this.set_camera_view(program_state);
     }
