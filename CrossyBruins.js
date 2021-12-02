@@ -252,13 +252,16 @@ export class CrossyBruins extends Scene {
         var pos = []; 
         let direction = Math.floor(Math.random() * 2) == 0? -1 : 1; 
         var x_pos = Math.floor(Math.random() * 5) - 15;
-        let car_num = Math.floor(Math.random() * 2) == 0 ? 3 : 4; // vary car num per lane so it doesn't look too uniform
+        let car_num = Math.floor(Math.random() * 2) == 0 ? 3 : 2; // vary car num per lane so it doesn't look too uniform
+        if(this.score > 30) {
+            car_num = Math.floor(Math.random() * 3) + 2; 
+        } 
         for(let i = 0; i < car_num; i++) {
             var dist_between = Math.floor(Math.random() * 4); // get random distance between cars
             let car_transform = Mat4.identity().times(Mat4.translation(dist_between + x_pos, -1, 1));
             pos.push(new Car(car_transform, 0, direction)); 
             //pos.push(Mat4.identity().times(Mat4.translation(dist_between + x_pos, -1, 1)));
-            x_pos += (car_num == 4 ? 9 : 13) + dist_between;
+            x_pos += (car_num == 3 ? 13 : (car_num == 2 ? 17 : 9)) + dist_between;
         }
         return pos; 
     }
@@ -308,7 +311,7 @@ export class CrossyBruins extends Scene {
     set_camera_view(program_state) {
         if (this.attached != undefined) {
             var blending_factor = 0.1, desired;
-            desired = Mat4.inverse(this.attached.times(Mat4.translation(4, 8, 25)));
+            desired = Mat4.inverse(this.attached.times(Mat4.translation(4, -35, 25)).times(Mat4.rotation(Math.PI/3, 1, 0, 0)).times(Mat4.scale(0.4, 0.4, 1)));
             desired = desired.map((x, i) => Vector.from(program_state.camera_inverse[i]).mix(x, blending_factor));
             program_state.set_camera(desired);
         }
@@ -588,11 +591,11 @@ export class CrossyBruins extends Scene {
                         let col = this.car_positions[i][k].getColor(); 
                         
                         if(col === 0) {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.red_car);
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.red_car);
                         } else if(col === 1) {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.blue_car);
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.blue_car);
                         } else {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.black_car);
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.black_car);
                         }
                         this.car_positions[i][k].setPosition(car_transform.times(Mat4.translation(this.car_speed * dir, 0, 0)));
                         
@@ -611,7 +614,7 @@ export class CrossyBruins extends Scene {
 
                 // leaf pads 
                 for (let k = 0; k < this.leaf_positions[i].length; k++) {
-                    var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -13, 1));
+                    var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -15, 1));
                     this.shapes.leaf.draw(context, program_state, leaf_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.leaf);
                 }
             }
