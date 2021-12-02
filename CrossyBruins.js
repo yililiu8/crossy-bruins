@@ -42,7 +42,7 @@ export class CrossyBruins extends Scene {
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
             bear: new Shape_From_File("assets/newbear.obj"),
-            leaf: new defs.Capped_Cylinder(0.05, 10),
+            leaf: new Shape_From_File("assets/lilypad1.obj"),
         };
 
         // *** Materials
@@ -240,7 +240,7 @@ export class CrossyBruins extends Scene {
                 // leaf pads 
                 for (let k = 0; k < this.leaf_positions[i].length; k++) {
                     var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -13, 1));
-                    this.shapes.leaf.draw(context, program_state, leaf_transform, this.materials.leaf);
+                    this.shapes.leaf.draw(context, program_state, leaf_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)), this.materials.leaf);
                 }
             }
             model_transform = model_transform.times(Mat4.translation(0, 4, 0));
