@@ -166,6 +166,8 @@ export class CrossyBruins extends Scene {
         this.game_ended = false; // set this to true if player collided and game is over
 
         this.origin = null; 
+
+        this.isJumping = false; 
     }
 
     generate_lanes() {
