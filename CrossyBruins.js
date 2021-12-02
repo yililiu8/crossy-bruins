@@ -507,12 +507,12 @@ export class CrossyBruins extends Scene {
 
              // checking if car is placed between the Bruin (playerX) or if Bruin is between the car
              // When the cars are moving towards the right
-             if(((playerX <= carX && carX <= playerX +2.0) || (carX <= playerX && playerX<= carX+2.0)) && dir === 1){
+             if(((playerX <= carX && carX <= playerX +2.25) || (carX <= playerX && playerX<= carX+2.25)) && dir === 1){
                  return true;
              }
              // checking if car is placed between the Bruin (playerX) or if Bruin is between the car
              // When the cars are moving towards the left
-             else if(((playerX-2.0 <= carX && carX <= playerX) || (carX-2.0 <= playerX && playerX<=carX))&& dir === -1){
+             else if(((playerX-2.25 <= carX && carX <= playerX) || (carX-2.25 <= playerX && playerX<=carX))&& dir === -1){
                  return true;                 
              }
 
