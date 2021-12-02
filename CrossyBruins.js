@@ -156,6 +156,8 @@ export class CrossyBruins extends Scene {
         this.score = 0;
 
         this.game_ended = false; // set this to true if player collided and game is over
+
+        this.origin = null; 
     }
 
     generate_lanes() {
@@ -211,11 +213,11 @@ export class CrossyBruins extends Scene {
             //generate leafs for river
             //only add leaf if lane type is 2 (river)
             else if (this.lane_type[i] === 2) {
-                // all river lanes needed at least 1 leaf so player can cross
-                // generate a random number between 1 and 6 for the number of leafs in a lane
-                let num_leafs = Math.floor(Math.random() * 6);
+                // all river lanes needed at least 2 leaf so player can cross
+                // generate a random number between 2 and 6 for the number of leafs in a lane
+                let num_leafs = Math.floor(Math.random() *5);
                 leaf_pos[i] = [];
-                for (let j = 0; j < num_leafs + 1; j++) { // find a random position for all n leafs
+                for (let j = 0; j < num_leafs + 2; j++) { // find a random position for all n leafs
                     let pos = Math.floor(Math.random() * 13);
                     if (pos < 6) {
                         leaf_pos[i].push(-1 * pos);
@@ -302,36 +304,102 @@ export class CrossyBruins extends Scene {
         }
     }
 
+    // returns false if there is an obstacle, otherwise true
+    player_can_move(pos, lane) {
+        let playerX = pos[0][3];
+        let playerY = pos[1][3];
+        let laneYCoords = -13 + (lane*4);
+
+        console.log(playerY, laneYCoords);
+
+        //check that player did not go out of bounds
+        if(playerX < -14 || playerX > 24 || this.score === -4 || this.score > this.lane_num) {
+            this.game_ended = true; 
+        }
+
+        //check collision detection for rocks and trees
+        if (this.lane_type[lane] === 0) {
+            if (this.rock_positions[lane] !== undefined) {
+                var rock_transform = Mat4.identity().times(Mat4.translation(3 + this.rock_positions[lane] * 3, laneYCoords, 1));
+                var rockX = rock_transform[0][3];
+                var rockY = rock_transform[1][3];
+                
+                if(Math.sqrt(Math.pow(rockX - playerX, 2) + Math.pow(rockY - playerY, 2)) < 1) {
+                    return false; 
+                }
+            }
+            else if(this.tree_positions[lane] !== undefined) {
+                var tree_transform = Mat4.identity().times(Mat4.translation(3 + this.tree_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                var treeX = tree_transform[0][3];
+                var treeY = tree_transform[1][3];
+                if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
+                    return false; 
+                }
+            }
+            else if(this.bush_positions[lane] !== undefined) {
+                var bush_transform = Mat4.identity().times(Mat4.translation(3 + this.bush_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                var bushX = bush_transform[0][3];
+                var bushY = bush_transform[1][3];
+                if(Math.sqrt(Math.pow(bushX - playerX, 2) + Math.pow(bushY - playerY, 2)) < 1) {
+                    return false;
+                }
+            }
+        }
+        return true; 
+    }
+
     // if player hits one of the movement keys, translate player's coordinates in that direction 
     move_player() {
         if (this.moveUp) {
-            this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0));
-            this.playerDirection = "north";
-            this.score += 1;
-            this.moveUp = false;
-            this.car_speed += .001; // as the score gets higher, car speed gets faster too
+            if(this.player_can_move(this.player_transform.times(Mat4.translation(0, 4, 0)), this.score + 4)) {
+                this.player_transform = this.player_transform.times(Mat4.translation(0, 4, 0));
+                this.score += 1;
+                this.car_speed += .001; // as the score gets higher, car speed gets faster too
 
-            this.car_dynamic_instantiation(1); 
+                this.car_dynamic_instantiation(1);
+            }
+            else {
+                this.origin = this.player_transform; 
+                this.player_transform = this.player_transform.times(Mat4.translation(0, 1, 0));
+            }
+            this.moveUp = false;
+            this.playerDirection = "north";
         }
         if (this.moveDown) {
-            this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
-            this.playerDirection = "south";
-            this.score -= 1;
+            if(this.player_can_move(this.player_transform.times(Mat4.translation(0, -4, 0)), this.score + 2)) {
+                this.player_transform = this.player_transform.times(Mat4.translation(0, -4, 0));
+                this.score -= 1;
+                this.car_speed -= .001; 
+    
+                this.car_dynamic_instantiation(-1); 
+            } else {
+                this.origin = this.player_transform; 
+                this.player_transform = this.player_transform.times(Mat4.translation(0, -1, 0));
+            }
             this.moveDown = false;
-            this.car_speed -= .001; 
-
-            this.car_dynamic_instantiation(-1); 
+            this.playerDirection = "south";
         }
         if (this.moveRight) {
-            this.player_transform = this.player_transform.times(Mat4.translation(3, 0, 0));
-            this.playerDirection = "east";
+            if(this.player_can_move(this.player_transform.times(Mat4.translation(3, 0, 0)), this.score + 3)) {
+                this.player_transform = this.player_transform.times(Mat4.translation(3, 0, 0));
+            } else {
+                this.origin = this.player_transform; 
+                this.player_transform = this.player_transform.times(Mat4.translation(1, 0, 0));
+            }
             this.moveRight = false;
+            this.playerDirection = "east";
         }
         if (this.moveLeft) {
-            this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
-            this.playerDirection = "west";
+            if(this.player_can_move(this.player_transform.times(Mat4.translation(-3, 0, 0)), this.score + 3)) {
+                this.player_transform = this.player_transform.times(Mat4.translation(-3, 0, 0));
+            } else {
+                this.origin = this.player_transform; 
+                this.player_transform = this.player_transform.times(Mat4.translation(-1, 0, 0));
+            }
             this.moveLeft = false;
+            this.playerDirection = "west";
         }
+
         // check collision detection for non-moving objects/river only if the player just moved
         if(this.playerMoved) {
             this.playerMoved = false;
@@ -340,44 +408,18 @@ export class CrossyBruins extends Scene {
             let playerY = this.player_transform[1][3];
             let laneYCoords = -13 + (lane*4);
 
+            console.log(playerY, laneYCoords);
+
             //check that player did not go out of bounds
             if(playerX < -14 || playerX > 24 || this.score === -4 || this.score > this.lane_num) {
                 this.game_ended = true; 
             }
 
-            //check collision detection for rocks and trees
-            if (this.lane_type[lane] === 0) {
-                if (this.rock_positions[lane] !== undefined) {
-                    var rock_transform = Mat4.identity().times(Mat4.translation(3 + this.rock_positions[lane] * 3, laneYCoords, 1));
-                    var rockX = rock_transform[0][3];
-                    var rockY = rock_transform[1][3];
-                    if(Math.sqrt(Math.pow(rockX - playerX, 2) + Math.pow(rockY - playerY, 2)) < 1) {
-                        this.game_ended = true;
-                    }
-                }
-                else if(this.tree_positions[lane] !== undefined) {
-                    var tree_transform = Mat4.identity().times(Mat4.translation(3 + this.tree_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
-                    var treeX = tree_transform[0][3];
-                    var treeY = tree_transform[1][3];
-                    if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
-                        this.game_ended = true;
-                    }
-                }
-                else if(this.bush_positions[lane] !== undefined) {
-                    var bush_transform = Mat4.identity().times(Mat4.translation(3 + this.bush_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
-                    var bushX = bush_transform[0][3];
-                    var bushY = bush_transform[1][3];
-                    if(Math.sqrt(Math.pow(bushX - playerX, 2) + Math.pow(bushY - playerY, 2)) < 1) {
-                        this.game_ended = true;
-                    }
-                }
-            }
             // checking that the player didn't collide with a car on the road
             if(this.lane_type[lane]===1){
                 if(this.check_collision_cars()){
-                this.game_ended = true;
-            }
-
+                    this.game_ended = true;
+                }
             }
 
             //check that player did not land in river 
@@ -583,7 +625,13 @@ export class CrossyBruins extends Scene {
         }
         player_rotated_transform = player_rotated_transform.times(Mat4.translation(0, 0.59, 0));
         this.shapes.bear.draw(context, program_state, player_rotated_transform, this.materials.bruin);
-        this.attached = this.player_transform;            
+
+        this.attached = this.player_transform;
+
+        if(this.origin !== null) {
+            this.player_transform = this.origin; 
+            this.origin = null; 
+        }
 
         this.set_camera_view(program_state);
     }
