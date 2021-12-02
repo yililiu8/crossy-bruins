@@ -69,8 +69,9 @@ export class CrossyBruins extends Scene {
             sphere: new defs.Subdivision_Sphere(2),
             rock: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(1),
             bear: new Shape_From_File("assets/newbear.obj"),
+            tree: new Shape_From_File("assets/tree.obj"),
+            bush: new Shape_From_File("assets/bush_files/eb_house_plant_01.obj"),
             leaf: new Shape_From_File("assets/lilypad1.obj"),
-            tree: new Shape_From_File("assets/low_poly_tree/Lowpoly_tree_sample.obj"),
             text: new Text_Line(35)
         };
 
@@ -103,8 +104,10 @@ export class CrossyBruins extends Scene {
                 { ambient: 1, diffusivity: .6, color: hex_color("#999999") }),
             leaf: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#13ae4b") }),
-            tree: new Material(new defs.Phong_Shader(),
-                { ambient: 1, diffusivity: .6, color: hex_color("#228C22") }),
+            tree: new Material(new Textured_Phong(),
+                { ambient: 1, texture: new Texture("assets/tree_texture.png") }),
+            bush: new Material(new defs.Phong_Shader(),
+                { ambient: 1, diffusivity: .6, color: hex_color("#002800") }),
             endScreen: new Material(new defs.Phong_Shader(), {
                     color: hex_color("#1E3F66"), ambient: 1,
                     diffusivity: 0.6, specularity:0.1
@@ -140,6 +143,7 @@ export class CrossyBruins extends Scene {
 
         this.rock_positions = {}; // dictionary for rocks positions: key = lane number, value = placement in lane 
         this.tree_positions = {}; // dictionary for trees positions: key = lane number, value = placement in lane
+        this.bush_positions = {}; // dictionary for trees positions: key = lane number, value = placement in lane
         this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
         this.car_positions = {}; // dictionary for car positions: key = lane number, value = array/list of Mat4 (model transforms) for all cars in lane
         this.generate_rocks_and_leafs();
@@ -179,11 +183,13 @@ export class CrossyBruins extends Scene {
         var rock_pos = {};
         var leaf_pos = {};
         var tree_pos = {};
+        var bush_pos = {};
         // start indices from 4 because first 4 lanes should have no obstacles, so that player doesn't start on an obstacle
         for (let i = 4; i < this.lane_num; i++) {
             //generate rocks on grass areas
             //should_generate_rocks tells us whether or not we should add a rock to the lane (0 = no, 1 = yes)
-            var should_generate_rock = Math.floor(Math.random() * 2);
+            // var should_generate_rock = Math.floor(Math.random() * 2);
+            var random_v = Math.random();
             if (this.lane_type[i] === 0) { // only add rock or tree if lane type is 0 (grass)
                 var pos = Math.floor(Math.random() * 13); // gets random position for rock in lane
                 var new_pos = pos;
@@ -192,11 +198,14 @@ export class CrossyBruins extends Scene {
                 } else {
                     new_pos = pos - 7;
                 }
-                if(should_generate_rock) {
+                if (random_v < 0.35) { // 35% chance of rock
                     rock_pos[i] = new_pos;
                 }
-                else { // if not rock, generate tree
+                else if (random_v < 0.70) { // 35% chance of tree
                     tree_pos[i] = new_pos;
+                }
+                else { // 30% chance of bush
+                    bush_pos[i] = new_pos;
                 }
             }
             //generate leafs for river
@@ -223,6 +232,7 @@ export class CrossyBruins extends Scene {
         this.rock_positions = rock_pos;
         this.leaf_positions = leaf_pos;
         this.tree_positions = tree_pos;
+        this.bush_positions = bush_pos;
         //console.log(this.rock_positions)
     }
 
@@ -346,6 +356,14 @@ export class CrossyBruins extends Scene {
                     var treeX = tree_transform[0][3];
                     var treeY = tree_transform[1][3];
                     if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
+                        this.game_ended = true;
+                    }
+                }
+                else if(this.bush_positions[lane] !== undefined) {
+                    var bush_transform = Mat4.identity().times(Mat4.translation(3 + this.bush_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                    var bushX = bush_transform[0][3];
+                    var bushY = bush_transform[1][3];
+                    if(Math.sqrt(Math.pow(bushX - playerX, 2) + Math.pow(bushY - playerY, 2)) < 1) {
                         this.game_ended = true;
                     }
                 }
@@ -495,8 +513,13 @@ export class CrossyBruins extends Scene {
                     this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                 }
                 else if(this.tree_positions[i] !== undefined) {
-                    var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                    var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(Math.PI/2, 1, 0, 0));
                     this.shapes.tree.draw(context, program_state, tree_transform, this.materials.tree);
+                }
+                else if(this.bush_positions[i] !== undefined) {
+                    var bush_transform = model_transform.times(Mat4.translation(3 + this.bush_positions[i] * 3, -13, 2)).times(Mat4.rotation(Math.PI/2, 1, 0, 0))
+                    .times(Mat4.scale(0.5,0.5,0.5)).times(Mat4.translation(0,-4,0));
+                    this.shapes.bush.draw(context, program_state, bush_transform, this.materials.bush);
                 }
             } else if (this.lane_type[i] === 1) { //road - currently gray lanes
                 this.shapes.lane.draw(context, program_state, model_transform, this.materials.texturedRoad);
@@ -542,7 +565,10 @@ export class CrossyBruins extends Scene {
         
         //player
         this.move_player();
-        this.shapes.bear.draw(context, program_state, this.player_transform, this.materials.bruin);
+        // orient the bear/player correctly before displaying it
+        let player_rotated_transform = this.player_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0))
+            .times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.translation(0, 0.59, 0));
+        this.shapes.bear.draw(context, program_state, player_rotated_transform, this.materials.bruin);
         this.attached = this.player_transform;
 
 
