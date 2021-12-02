@@ -28,8 +28,9 @@ class Cube extends Shape {
 class Car {
     constructor(model_transform, color, direction) {
         this.model_transform = model_transform;
-        let colors = [hex_color("#FF0000"), hex_color("#00FF00"), hex_color("#673AB7"), hex_color("#03A9F4"), hex_color("#FFFF33")]; // red, green, purple, blue, yellow
-        this.color = colors[Math.floor(Math.random() * 5)];
+        //let colors = [hex_color("#FF0000"), hex_color("#00FF00"), hex_color("#673AB7"), hex_color("#03A9F4"), hex_color("#FFFF33")]; // red, green, purple, blue, yellow
+        //this.color = colors[Math.floor(Math.random() * 5)];
+        this.color = Math.floor(Math.random() * 3); // 0 = red, 1 = blue, 2 = black
         this.direction = direction
         //may also need a car type if we have multiple types of cars
     }
@@ -536,8 +537,15 @@ export class CrossyBruins extends Scene {
                     for(let k = 0; k < this.car_positions[i].length; k++) {
                         let car_transform = this.car_positions[i][k].getPosition(); 
                         let dir = this.car_positions[i][k].getDirection(); 
+                        let col = this.car_positions[i][k].getColor(); 
                         
-                        this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, -1, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, -1)), this.materials.red_car);
+                        if(col === 0) {
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.red_car);
+                        } else if(col === 1) {
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.blue_car);
+                        } else {
+                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)), this.materials.black_car);
+                        }
                         this.car_positions[i][k].setPosition(car_transform.times(Mat4.translation(this.car_speed * dir, 0, 0)));
                         
                         // dynamic instantiation for car - if car reaches end of board -> reset it's position to very begining of board
