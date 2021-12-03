@@ -52,6 +52,21 @@ class Car {
     }
 }
 
+function sound(src) {
+    this.sound = document.createElement("audio");
+    this.sound.src = src;
+    this.sound.setAttribute("preload", "auto");
+    this.sound.setAttribute("controls", "none");
+    this.sound.style.display = "none";
+    document.body.appendChild(this.sound);
+    this.play = function(){
+        this.sound.play();
+    }
+    this.stop = function(){
+        this.sound.pause();
+    }    
+}
+
 
 export class CrossyBruins extends Scene {
     constructor() {
@@ -74,7 +89,6 @@ export class CrossyBruins extends Scene {
             tree: new Shape_From_File("assets/tree.obj"),
             bush: new Shape_From_File("assets/bush_files/eb_house_plant_01.obj"),
             leaf: new Shape_From_File("assets/lilypad1.obj"),
-            //frog: new defs.Subdivision_Sphere(1),
             frog: new Shape_From_File("assets/20436_Frog_v1.obj"),
             text: new Text_Line(35),
             coin: new Shape_From_File("assets/coin.obj")
@@ -135,6 +149,8 @@ export class CrossyBruins extends Scene {
 
         this.initial_camera_location = Mat4.look_at(vec3(0, 20, 10), vec3(0, 0, 0), vec3(0, -1, 0));
 
+        this.coin_sound = new sound("assets/coin-sound.mp3");
+
         this.setup_game(); 
     }
 
@@ -163,6 +179,7 @@ export class CrossyBruins extends Scene {
         this.bush_positions = {}; // dictionary for trees positions: key = lane number, value = placement in lane
         this.coin_positions = {}; // dictionary for coin positions: key = lane number, value = placement in lane
         this.leaf_positions = {};  // dictionary for leaf positions: key = lane number, value = array/list for all placements of leafs in lane ({0: [2, 3, 12]})
+        this.frog_positions = {};
         this.car_positions = {}; // dictionary for car positions: key = lane number, value = array/list of Mat4 (model transforms) for all cars in lane
         this.generate_rocks_and_leafs();
         this.generate_cars(); 
@@ -209,6 +226,7 @@ export class CrossyBruins extends Scene {
         var tree_pos = {};
         var bush_pos = {};
         var coin_pos = {};
+        var frog_pos = {};
         // start indices from 4 because first 4 lanes should have no obstacles, so that player doesn't start on an obstacle
         for (let i = 4; i < this.lane_num; i++) {
             //generate rocks on grass areas
@@ -242,17 +260,17 @@ export class CrossyBruins extends Scene {
                 leaf_pos[i] = [];
                 for (let j = 0; j < num_leafs + 2; j++) { // find a random position for all n leafs
                     let pos = Math.floor(Math.random() * 13);
+
+                    if(num_leafs > 2 && j === 0) {
+                        frog_pos[i] = pos < 6 ? (-1 * pos) : (pos - 7);
+                    }
                     
                     if (pos < 6) {
                         leaf_pos[i].push(-1 * pos);
                         
                     } else {
                         leaf_pos[i].push(pos - 7);
-                        
-
                     }
-
-                   
                 }
 
                 if(i !== 0 && this.lane_type[i-1] === 2) {
@@ -266,6 +284,7 @@ export class CrossyBruins extends Scene {
         this.tree_positions = tree_pos;
         this.bush_positions = bush_pos;
         this.coin_positions = coin_pos; 
+        this.frog_positions = frog_pos; 
         //console.log(this.rock_positions)
     }
 
@@ -338,7 +357,9 @@ export class CrossyBruins extends Scene {
     set_camera_view(program_state) {
         if (this.attached != undefined) {
             var blending_factor = 0.1, desired;
-            desired = Mat4.inverse(this.attached.times(Mat4.translation(4, -35, 25)).times(Mat4.rotation(Math.PI/3, 1, 0, 0)).times(Mat4.scale(0.4, 0.4, 1)));
+            desired = Mat4.inverse(this.attached.times(Mat4.translation(4, -35, 25))
+                                                .times(Mat4.rotation(Math.PI/3, 1, 0, 0))
+                                                .times(Mat4.scale(0.4, 0.4, 1)));
             desired = desired.map((x, i) => Vector.from(program_state.camera_inverse[i]).mix(x, blending_factor));
             program_state.set_camera(desired);
         }
@@ -369,7 +390,8 @@ export class CrossyBruins extends Scene {
                 }
             }
             else if(this.tree_positions[lane] !== undefined) {
-                var tree_transform = Mat4.identity().times(Mat4.translation(3 + this.tree_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                var tree_transform = Mat4.identity().times(Mat4.translation(3 + this.tree_positions[lane] * 3, laneYCoords, 2))
+                                                    .times(Mat4.rotation(90, 1, 0, 0));
                 var treeX = tree_transform[0][3];
                 var treeY = tree_transform[1][3];
                 if(Math.sqrt(Math.pow(treeX - playerX, 2) + Math.pow(treeY - playerY, 2)) < 1) {
@@ -377,7 +399,8 @@ export class CrossyBruins extends Scene {
                 }
             }
             else if(this.bush_positions[lane] !== undefined) {
-                var bush_transform = Mat4.identity().times(Mat4.translation(3 + this.bush_positions[lane] * 3, laneYCoords, 2)).times(Mat4.rotation(90, 1, 0, 0));
+                var bush_transform = Mat4.identity().times(Mat4.translation(3 + this.bush_positions[lane] * 3, laneYCoords, 2))
+                                                    .times(Mat4.rotation(90, 1, 0, 0));
                 var bushX = bush_transform[0][3];
                 var bushY = bush_transform[1][3];
                 if(Math.sqrt(Math.pow(bushX - playerX, 2) + Math.pow(bushY - playerY, 2)) < 1) {
@@ -389,8 +412,10 @@ export class CrossyBruins extends Scene {
                 var coin_transform = Mat4.identity().times(Mat4.translation(3 + this.coin_positions[lane] * 3, laneYCoords , 1)); 
                 var coinX = coin_transform[0][3];
                 var coinY = coin_transform[1][3];
+
                 if(Math.sqrt(Math.pow(coinX - playerX, 2) + Math.pow(coinY - playerY, 2)) < 1) {
                     this.coin_count += 1; 
+                    this.coin_sound.play(); 
                     delete this.coin_positions[lane]; 
                 }
             }
@@ -476,8 +501,6 @@ export class CrossyBruins extends Scene {
             if(this.check_collision_in_river()) {
                 this.game_ended = true; 
             }
-
-            
         }
     }
 
@@ -496,7 +519,7 @@ export class CrossyBruins extends Scene {
             var leafX = leaf_transform[0][3];
             var leafY = leaf_transform[1][3];
             if(Math.sqrt(Math.pow(leafX - playerX, 2) + Math.pow(leafY - playerY, 2)) < 1) {
-               if(this.leaf_positions[lane][k]===1||this.leaf_positions[lane][k]===2){
+               if(this.frog_positions[lane] !== undefined && this.frog_positions[lane] === this.leaf_positions[lane][k]){
                    return true;
                }else{
                    return false; 
@@ -623,12 +646,15 @@ export class CrossyBruins extends Scene {
                     this.shapes.rock.draw(context, program_state, rock_transform, this.materials.rock);
                 }
                 else if(this.tree_positions[i] !== undefined) {
-                    var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2)).times(Mat4.rotation(Math.PI/2, 1, 0, 0));
+                    var tree_transform = model_transform.times(Mat4.translation(3 + this.tree_positions[i] * 3, -13, 2))
+                                                        .times(Mat4.rotation(Math.PI/2, 1, 0, 0));
                     this.shapes.tree.draw(context, program_state, tree_transform, this.materials.tree);
                 }
                 else if(this.bush_positions[i] !== undefined) {
-                    var bush_transform = model_transform.times(Mat4.translation(3 + this.bush_positions[i] * 3, -13, 2)).times(Mat4.rotation(Math.PI/2, 1, 0, 0))
-                    .times(Mat4.scale(0.5,0.5,0.5)).times(Mat4.translation(0,-4,0));
+                    var bush_transform = model_transform.times(Mat4.translation(3 + this.bush_positions[i] * 3, -13, 2))
+                                                        .times(Mat4.rotation(Math.PI/2, 1, 0, 0))
+                                                        .times(Mat4.scale(0.5,0.5,0.5))
+                                                        .times(Mat4.translation(0,-4,0));
                     this.shapes.bush.draw(context, program_state, bush_transform, this.materials.bush);
                 }
 
@@ -649,12 +675,18 @@ export class CrossyBruins extends Scene {
                         let dir = this.car_positions[i][k].getDirection(); 
                         let col = this.car_positions[i][k].getColor(); 
                         
+                        let transform = model_transform.times(car_transform)
+                                                        .times(Mat4.translation(0, -12, 0))
+                                                        .times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0))
+                                                        .times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir))
+                                                        .times(Mat4.scale(1.2, 1.2, 1.2));
+
                         if(col === 0) {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.red_car);
+                            this.shapes.car.draw(context, program_state, transform, this.materials.red_car);
                         } else if(col === 1) {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.blue_car);
+                            this.shapes.car.draw(context, program_state, transform, this.materials.blue_car);
                         } else {
-                            this.shapes.car.draw(context, program_state, model_transform.times(car_transform).times(Mat4.translation(0, -12, 0)).times(Mat4.rotation(Math.PI/2, 0, 1 * dir, 0)).times(Mat4.rotation(Math.PI/2, 0, 0, 1 * dir)).times(Mat4.scale(1.2, 1.2, 1.2)), this.materials.black_car);
+                            this.shapes.car.draw(context, program_state, transform, this.materials.black_car);
                         }
                         this.car_positions[i][k].setPosition(car_transform.times(Mat4.translation(this.car_speed * dir, 0, 0)));
                         
@@ -673,29 +705,29 @@ export class CrossyBruins extends Scene {
 
                 // leaf pads 
                 for (let k = 0; k < this.leaf_positions[i].length; k++) {
-                    var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -15, 1));
-                    var finalleaf=leaf_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0));
-                    this.shapes.leaf.draw(context, program_state,finalleaf , this.materials.leaf);
+                    var leaf_transform = model_transform.times(Mat4.translation(3 + this.leaf_positions[i][k] * 3, -14, 1))
+                                                        .times(Mat4.rotation(Math.PI/2, 1, 0, 0));
+
+                    this.shapes.leaf.draw(context, program_state, leaf_transform, this.materials.leaf);
    
-                    if(this.leaf_positions[i][k]==1||this.leaf_positions[i][k]==2) {
-                      this.frog_position;  
-                      //console.log(this.leaf_positions[i][k]);
-                      this.isJumping=true;
-                      var jumps=0;
-                      let frog_transform=finalleaf;
-                      if(this.isJumping==true){
-                         //frog_transform=frog_transform.times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0));
-                         frog_transform=frog_transform.times(Mat4.scale(0.55, 0.55, 0.55))
-                                                      .times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0))
-                                                      .times(Mat4.rotation(Math.PI, 0, 1, 0))
-                                                      .times(Mat4.rotation(-Math.PI/2, 1, 0, 0));
-                         this.shapes.frog.draw(context, program_state,frog_transform, this.materials.frog);
-                         jumps=jumps+1;
-                         if(jumps>3){
-                             this.isJumping=false;
-                         }
-                      }
-                      
+                    if(this.frog_positions[i] !== undefined && this.frog_positions[i] === this.leaf_positions[i][k]) {
+                        //console.log(this.leaf_positions[i][k]);
+                        this.isJumping=true;
+                        var jumps=0;
+                        let frog_transform=leaf_transform;
+                        if(this.isJumping==true){
+                            //frog_transform=frog_transform.times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0));
+                            frog_transform=frog_transform.times(Mat4.scale(0.55, 0.55, 0.55))
+                                                        .times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0))
+                                                        .times(Mat4.rotation(Math.PI, 0, 1, 0))
+                                                        .times(Mat4.rotation(-Math.PI/2, 1, 0, 0))
+                                                        .times(Mat4.translation(0, 0, 1));
+                            this.shapes.frog.draw(context, program_state,frog_transform, this.materials.frog);
+                            jumps=jumps+1;
+                            if(jumps>3){
+                                this.isJumping=false;
+                            }
+                        }
                     }
 
                 }
@@ -713,9 +745,15 @@ export class CrossyBruins extends Scene {
         
         //player
         this.move_player();
+
+        var player_rotated_transform = this.player_transform;
+        let lane = this.score+3; 
+        if(this.lane_type[lane] === 2) {
+            player_rotated_transform = player_rotated_transform.times(Mat4.translation(0, -1, 1));
+        }
         
         // orient the bear/player correctly before displaying it
-        var player_rotated_transform = this.player_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)); // rotate bear so that it is standing upright, facing south
+        player_rotated_transform = player_rotated_transform.times(Mat4.rotation(Math.PI/2, 1, 0, 0)); // rotate bear so that it is standing upright, facing south
         if(this.playerDirection == "north") {
             player_rotated_transform = player_rotated_transform.times(Mat4.rotation(Math.PI, 0, 1, 0));
         }
