@@ -261,7 +261,7 @@ export class CrossyBruins extends Scene {
                 for (let j = 0; j < num_leafs + 2; j++) { // find a random position for all n leafs
                     let pos = Math.floor(Math.random() * 13);
 
-                    if(num_leafs > 2 && j === 0) {
+                    if(num_leafs > 1 && j === 0) {
                         frog_pos[i] = pos < 6 ? (-1 * pos) : (pos - 7);
                     }
                     
