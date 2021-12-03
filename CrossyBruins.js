@@ -474,8 +474,15 @@ export class CrossyBruins extends Scene {
             var leafX = leaf_transform[0][3];
             var leafY = leaf_transform[1][3];
             if(Math.sqrt(Math.pow(leafX - playerX, 2) + Math.pow(leafY - playerY, 2)) < 1) {
-                return false; 
+               if(this.leaf_positions[lane][k]===1||this.leaf_positions[lane][k]===2){
+                   return true;
+                }else{
+                   return false; 
+                }
+                
             }
+
+
         }
         return true; 
     }
@@ -577,17 +584,6 @@ export class CrossyBruins extends Scene {
 
 
 
-    
-
-
-
-
-
-
-
-
-
-
 
         let model_transform = Mat4.identity();
 
@@ -671,9 +667,6 @@ export class CrossyBruins extends Scene {
                       let frog_transform=finalleaf;
                       if(this.isJumping==true){
                          
-                         
-                         
-                      
                          frog_transform=frog_transform.times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0));
                          this.shapes.frog.draw(context, program_state,frog_transform, this.materials.frog);
 
