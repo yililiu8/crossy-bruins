@@ -74,7 +74,8 @@ export class CrossyBruins extends Scene {
             tree: new Shape_From_File("assets/tree.obj"),
             bush: new Shape_From_File("assets/bush_files/eb_house_plant_01.obj"),
             leaf: new Shape_From_File("assets/lilypad1.obj"),
-            frog: new defs.Subdivision_Sphere(1),
+            //frog: new defs.Subdivision_Sphere(1),
+            frog: new Shape_From_File("assets/20436_Frog_v1.obj"),
             text: new Text_Line(35)
         };
 
@@ -117,8 +118,8 @@ export class CrossyBruins extends Scene {
                 { ambient: 1, texture: new Texture("assets/tree_texture.png") }),
             bush: new Material(new defs.Phong_Shader(),
                 { ambient: 1, diffusivity: .6, color: hex_color("#002800") }),
-
-            frog:new Material(new defs.Phong_Shader(), { ambient: 1, diffusivity: .6, color: hex_color("23705d") } ),
+            frog: new Material(new defs.Phong_Shader(),
+                { ambient: 1, diffusivity: .6, color: hex_color("#25D900") }),
             endScreen: new Material(new defs.Phong_Shader(), {
                     color: hex_color("#1E3F66"), ambient: 1,
                     diffusivity: 0.6, specularity:0.1
@@ -338,7 +339,7 @@ export class CrossyBruins extends Scene {
         let playerY = pos[1][3];
         let laneYCoords = -13 + (lane*4);
 
-        console.log(playerY, laneYCoords);
+        //console.log(playerY, laneYCoords);
 
         //check that player did not go out of bounds
         if(playerX < -14 || playerX > 24 || this.score === -4 || this.score > this.lane_num) {
@@ -436,7 +437,7 @@ export class CrossyBruins extends Scene {
             let playerY = this.player_transform[1][3];
             let laneYCoords = -13 + (lane*4);
 
-            console.log(playerY, laneYCoords);
+            //console.log(playerY, laneYCoords);
 
             //check that player did not go out of bounds
             if(playerX < -14 || playerX > 24 || this.score === -4 || this.score > this.lane_num) {
@@ -500,7 +501,7 @@ export class CrossyBruins extends Scene {
         for(let k=0; k< this.car_positions[lane].length; k++){
              var car_transform = this.car_positions[lane][k].getPosition();
              var dir = this.car_positions[lane][k].getDirection();
-             console.log("dir: ", dir);
+             //console.log("dir: ", dir);
 
              var car_moved = Mat4.identity().times(car_transform).times(Mat4.translation(0, -12, 1));
              var carX = car_moved[0][3];
@@ -659,7 +660,7 @@ export class CrossyBruins extends Scene {
                     {
                       
                       this.frog_position;  
-                      console.log(this.leaf_positions[i][k]);
+                      //console.log(this.leaf_positions[i][k]);
 
                       this.isJumping=true;
                       
@@ -667,7 +668,10 @@ export class CrossyBruins extends Scene {
                       let frog_transform=finalleaf;
                       if(this.isJumping==true){
                          
-                         frog_transform=frog_transform.times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0));
+                         //frog_transform=frog_transform.times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0));
+                         frog_transform=frog_transform.times(Mat4.scale(0.55, 0.55, 0.55))
+                         .times(Mat4.translation(0, 3.54 * Math.abs(Math.sin(t)) , 0))
+                         .times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-Math.PI/2, 1, 0, 0));
                          this.shapes.frog.draw(context, program_state,frog_transform, this.materials.frog);
 
                          jumps=jumps+1;
