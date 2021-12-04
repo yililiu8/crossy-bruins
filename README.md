@@ -11,4 +11,7 @@ Rosa Garza, Anubha Kale, Yili Liu, Divya Pimparkar, Catherine Zhang
 3. Open a chrome tab and navigate to **localhost:8000** to play.
 
 ## Playing
+
+![Alt Text](demo.gif)
+
 Use the **u** (up), **h** (left), **j** (down), **k** (right) keys to control the bruin and cross as many lanes as possible. To restart the game at any point, press **r**. 
