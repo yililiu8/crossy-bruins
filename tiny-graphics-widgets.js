@@ -256,7 +256,7 @@ const Code_Widget = widgets.Code_Widget =
 
         build_reader(element, main_scene, additional_scenes, definitions) {
             // (Internal helper function)
-            this.definitions = definitions;
+            /*this.definitions = definitions;
             const code_panel = element.appendChild(document.createElement("div"));
             code_panel.className = "code-panel";
             // const text        = code_panel.appendChild( document.createElement( "p" ) );
@@ -264,12 +264,12 @@ const Code_Widget = widgets.Code_Widget =
             this.code_display = code_panel.appendChild(document.createElement("div"));
             this.code_display.className = "code-display";
             // Default textbox contents:
-            this.display_code(main_scene);
+            this.display_code(main_scene);*/
         }
 
         build_navigator(element, main_scene, additional_scenes, definitions) {
             // (Internal helper function)
-            const class_list = element.appendChild(document.createElement("table"));
+            /*const class_list = element.appendChild(document.createElement("table"));
             class_list.className = "class-list";
             const top_cell = class_list.insertRow(-1).insertCell(-1);
             top_cell.colSpan = 2;
@@ -310,7 +310,7 @@ const Code_Widget = widgets.Code_Widget =
                     class_link.textContent = name;
                     cell.appendChild(document.createTextNode(" "));
                 }
-            }
+            }*/
         }
 
         display_code(class_to_display) {
